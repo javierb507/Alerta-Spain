@@ -32,11 +32,11 @@ const StatsChart: React.FC<Props> = ({ events }) => {
   const status = getStatusConfig(maxSeverity);
 
   return (
-    <div className="w-full bg-slate-900/50 rounded-xl p-4 mb-4 border border-slate-800">
-      <h4 className="text-xs text-slate-400 uppercase tracking-widest font-semibold mb-3 text-center">Nivel de Riesgo Actual</h4>
+    <div className="w-full bg-white dark:bg-slate-900/50 rounded-xl p-4 mb-4 border border-slate-200 dark:border-slate-800 transition-colors">
+      <h4 className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-widest font-semibold mb-3 text-center">Nivel de Riesgo Actual</h4>
       
       <div className="flex flex-col items-center justify-center gap-2 mb-4">
-          <div className={`p-3 rounded-full bg-slate-800 border border-slate-700 ${status.text} shadow-lg shadow-${status.color}/20`}>
+          <div className={`p-3 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 ${status.text} shadow-lg shadow-${status.color}/20`}>
               {status.icon}
           </div>
           <span className={`text-2xl font-black tracking-tight ${status.text}`}>
@@ -44,18 +44,18 @@ const StatsChart: React.FC<Props> = ({ events }) => {
           </span>
       </div>
 
-      <div className="flex gap-1 h-2 w-full rounded-full overflow-hidden bg-slate-800">
+      <div className="flex gap-1 h-2 w-full rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700">
         {/* Level 0 - Green */}
-        <div className={`flex-1 transition-all duration-500 ${maxSeverity >= 0 ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-slate-700'}`}></div>
+        <div className={`flex-1 transition-all duration-500 ${maxSeverity >= 0 ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-slate-200 dark:bg-slate-700'}`}></div>
         {/* Level 1 - Blue */}
-        <div className={`flex-1 transition-all duration-500 ${maxSeverity >= 1 ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'bg-slate-700'}`}></div>
+        <div className={`flex-1 transition-all duration-500 ${maxSeverity >= 1 ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'bg-slate-200 dark:bg-slate-700'}`}></div>
         {/* Level 2 - Orange */}
-        <div className={`flex-1 transition-all duration-500 ${maxSeverity >= 2 ? 'bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.5)]' : 'bg-slate-700'}`}></div>
+        <div className={`flex-1 transition-all duration-500 ${maxSeverity >= 2 ? 'bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.5)]' : 'bg-slate-200 dark:bg-slate-700'}`}></div>
         {/* Level 3 - Red */}
-        <div className={`flex-1 transition-all duration-500 ${maxSeverity >= 3 ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : 'bg-slate-700'}`}></div>
+        <div className={`flex-1 transition-all duration-500 ${maxSeverity >= 3 ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : 'bg-slate-200 dark:bg-slate-700'}`}></div>
       </div>
       
-      <div className="flex justify-between text-[10px] text-slate-500 mt-2 font-mono uppercase">
+      <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-500 mt-2 font-mono uppercase">
         <span>Seguro</span>
         <span>Crítico</span>
       </div>

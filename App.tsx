@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { MapPin, Navigation, Search, History, AlertOctagon, RotateCw, Loader2, Bell, BellOff, Calendar, Filter } from 'lucide-react';
+import { MapPin, Navigation, Search, History, AlertOctagon, RotateCw, Loader2, Bell, BellOff, Calendar, Filter, Sun, Moon } from 'lucide-react';
 import { AlertEvent, UserLocation, SeverityLevel } from './types';
 import { fetchAlerts } from './services/geminiService';
 import AlertCard from './components/AlertCard';
@@ -18,6 +18,28 @@ export default function App() {
   const [analysis, setAnalysis] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [radius, setRadius] = useState<number>(10); // Default 10km
+  
+  // Theme State
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('theme');
+        return (saved === 'light' || saved === 'dark') ? saved : 'dark';
+    }
+    return 'dark';
+  });
+
+  // Apply Theme
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (theme === 'dark') {
+        root.classList.add('dark');
+    } else {
+        root.classList.remove('dark');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
   
   // History Mode State - Active query
   const [historyDate, setHistoryDate] = useState<string>('');
@@ -229,37 +251,44 @@ export default function App() {
 
   // Onboarding View
   const renderOnboarding = () => (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-slate-950 relative overflow-hidden">
+    <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-slate-50 dark:bg-slate-950 relative overflow-hidden transition-colors duration-300">
       {/* Background Decor */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none opacity-50 dark:opacity-100">
          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-emergency-500/10 rounded-full blur-[100px]" />
          <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-500/10 rounded-full blur-[100px]" />
       </div>
 
+      <button 
+        onClick={toggleTheme}
+        className="absolute top-6 right-6 p-2 rounded-full bg-white dark:bg-slate-800 shadow-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all z-50 border border-slate-200 dark:border-slate-700"
+      >
+        {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+      </button>
+
       <div className="z-10 w-full max-w-md space-y-8 text-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-20 h-20 bg-slate-900 rounded-2xl flex items-center justify-center shadow-2xl shadow-emergency-900/20 border border-slate-800">
+          <div className="w-20 h-20 bg-white dark:bg-slate-900 rounded-2xl flex items-center justify-center shadow-2xl shadow-emergency-900/10 dark:shadow-emergency-900/20 border border-slate-200 dark:border-slate-800">
              <AlertOctagon className="w-10 h-10 text-emergency-500" />
           </div>
-          <h1 className="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">
+          <h1 className="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400">
             ALERTA ESPAÑA
           </h1>
-          <p className="text-slate-400 text-lg">
+          <p className="text-slate-600 dark:text-slate-400 text-lg">
             Monitor de emergencias en tiempo real.
           </p>
-          <div className="bg-yellow-900/20 border border-yellow-700/50 px-3 py-1 rounded-full">
-            <p className="text-xs text-yellow-500 font-semibold tracking-wide uppercase">
+          <div className="bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700/50 px-3 py-1 rounded-full">
+            <p className="text-xs text-yellow-700 dark:text-yellow-500 font-semibold tracking-wide uppercase">
               Solo disponible en territorio español 🇪🇸
             </p>
           </div>
         </div>
 
-        <div className="w-full bg-slate-900/50 backdrop-blur-md p-6 rounded-2xl border border-slate-800 shadow-xl text-left">
+        <div className="w-full bg-white/80 dark:bg-slate-900/50 backdrop-blur-md p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl text-left transition-colors duration-300">
           
           <div className="mb-6">
-             <label className="flex justify-between text-xs text-slate-400 mb-2 font-mono uppercase tracking-wider">
+             <label className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mb-2 font-mono uppercase tracking-wider">
                 <span>Radio de cobertura</span>
-                <span className="text-white font-bold">{radius} km</span>
+                <span className="text-slate-900 dark:text-white font-bold">{radius} km</span>
              </label>
              <input 
                 type="range" 
@@ -268,7 +297,7 @@ export default function App() {
                 step="5"
                 value={radius} 
                 onChange={(e) => setRadius(Number(e.target.value))}
-                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500 hover:accent-blue-400 transition-colors"
+                className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500 hover:accent-blue-400 transition-colors"
              />
              <div className="flex justify-between text-[10px] text-slate-500 mt-1 font-mono">
                 <span>5 km (Local)</span>
@@ -279,30 +308,30 @@ export default function App() {
           <button 
             onClick={handleGPSLocation}
             disabled={loading}
-            className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 mb-4 group"
+            className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 mb-4 group shadow-lg shadow-blue-500/20"
           >
             {loading ? <Loader2 className="animate-spin" /> : <Navigation className="w-5 h-5 group-hover:animate-pulse" />}
             Usar mi ubicación actual
           </button>
           
           <div className="relative flex py-2 items-center">
-            <div className="flex-grow border-t border-slate-800"></div>
-            <span className="flex-shrink mx-4 text-slate-500 text-xs uppercase tracking-widest">o busca tu ciudad</span>
-            <div className="flex-grow border-t border-slate-800"></div>
+            <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
+            <span className="flex-shrink mx-4 text-slate-400 dark:text-slate-500 text-xs uppercase tracking-widest">o busca tu ciudad</span>
+            <div className="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
           </div>
 
           <form onSubmit={handleManualLocation} className="mt-4 flex gap-2">
             <input 
               type="text" 
               placeholder="Ej: Toledo, Valencia, Madrid..." 
-              className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+              className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors placeholder:text-slate-400"
               value={location.name}
               onChange={(e) => setLocation({ ...location, name: e.target.value })}
             />
             <button 
               type="submit"
               disabled={loading || !location.name}
-              className="bg-slate-800 hover:bg-slate-700 text-white p-3 rounded-xl transition-colors border border-slate-700 disabled:opacity-50"
+              className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-white p-3 rounded-xl transition-colors border border-slate-200 dark:border-slate-700 disabled:opacity-50"
             >
               {loading ? <Loader2 className="animate-spin w-5 h-5" /> : <Search className="w-5 h-5" />}
             </button>
@@ -310,7 +339,7 @@ export default function App() {
           
           <button 
             onClick={() => setView(ViewState.HISTORY)}
-            className="w-full mt-4 py-2 text-xs text-slate-500 hover:text-slate-300 flex items-center justify-center gap-1 transition-colors"
+            className="w-full mt-4 py-2 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 flex items-center justify-center gap-1 transition-colors"
           >
             <History className="w-3 h-3" />
             Búsqueda histórica
@@ -322,16 +351,16 @@ export default function App() {
 
   // History Search View
   const renderHistory = () => (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-slate-950">
-      <div className="w-full max-w-md bg-slate-900/80 p-6 rounded-2xl border border-slate-800 shadow-xl">
-        <div className="flex items-center gap-2 mb-6 text-slate-300 cursor-pointer" onClick={() => setView(ViewState.ONBOARDING)}>
+    <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
+      <div className="w-full max-w-md bg-white/80 dark:bg-slate-900/80 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl backdrop-blur-md">
+        <div className="flex items-center gap-2 mb-6 cursor-pointer group" onClick={() => setView(ViewState.ONBOARDING)}>
           <Calendar className="w-6 h-6 text-purple-500" />
-          <span className="text-xl font-bold">Archivo Histórico</span>
+          <span className="text-xl font-bold text-slate-900 dark:text-slate-300 group-hover:text-purple-500 transition-colors">Archivo Histórico</span>
         </div>
         
         <form onSubmit={handleHistorySearch} className="space-y-4">
           <div>
-            <label className="text-xs text-slate-400 uppercase font-bold mb-1 block">Ubicación</label>
+            <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold mb-1 block">Ubicación</label>
             <div className="flex gap-2">
                 <input 
                   type="text"
@@ -339,27 +368,27 @@ export default function App() {
                   value={historyLocation}
                   onChange={(e) => setHistoryLocation(e.target.value)}
                   placeholder="Ciudad o región"
-                  className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-purple-500 focus:outline-none transition-colors"
+                  className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 text-slate-900 dark:text-white focus:border-purple-500 focus:outline-none transition-colors"
                 />
                 <button 
                     type="button"
                     onClick={handleHistoryGPS}
-                    className="bg-slate-800 hover:bg-slate-700 text-white px-3 rounded-lg border border-slate-700 transition-colors flex items-center justify-center"
+                    className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-white px-3 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors flex items-center justify-center"
                     title="Usar mi ubicación"
                     disabled={loading}
                 >
-                    {loading && !historyLocation ? <Loader2 className="animate-spin w-5 h-5" /> : <Navigation className="w-5 h-5 text-blue-400" />}
+                    {loading && !historyLocation ? <Loader2 className="animate-spin w-5 h-5" /> : <Navigation className="w-5 h-5 text-blue-500 dark:text-blue-400" />}
                 </button>
             </div>
           </div>
           
           <div>
-             <label className="text-xs text-slate-400 uppercase font-bold mb-1 block">Categoría</label>
+             <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold mb-1 block">Categoría</label>
              <div className="relative">
                  <select 
                     value={formCategory}
                     onChange={(e) => setFormCategory(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-3 text-white appearance-none focus:border-purple-500 focus:outline-none"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 text-slate-900 dark:text-white appearance-none focus:border-purple-500 focus:outline-none"
                  >
                     {categories.map(c => <option key={c} value={c}>{c}</option>)}
                  </select>
@@ -368,14 +397,14 @@ export default function App() {
           </div>
 
           <div>
-            <label className="text-xs text-slate-400 uppercase font-bold mb-1 block">Fecha del Evento</label>
+            <label className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold mb-1 block">Fecha del Evento</label>
             <div className="grid grid-cols-3 gap-2">
                 {/* Day */}
                 <div className="relative">
                    <select 
                       value={formDay} 
                       onChange={(e) => setFormDay(Number(e.target.value))}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-3 text-white appearance-none text-center focus:border-purple-500 focus:outline-none"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-3 text-slate-900 dark:text-white appearance-none text-center focus:border-purple-500 focus:outline-none"
                    >
                      {days.map(d => <option key={d} value={d}>{d}</option>)}
                    </select>
@@ -393,7 +422,7 @@ export default function App() {
                             const maxDay = new Date(formYear, newMonth + 1, 0).getDate();
                             if (formDay > maxDay) setFormDay(maxDay);
                         }}
-                        className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-3 text-white appearance-none text-center focus:border-purple-500 focus:outline-none"
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-3 text-slate-900 dark:text-white appearance-none text-center focus:border-purple-500 focus:outline-none"
                     >
                         {months.map((m, idx) => <option key={idx} value={idx}>{m.substring(0,3)}</option>)}
                     </select>
@@ -405,7 +434,7 @@ export default function App() {
                     <select 
                         value={formYear} 
                         onChange={(e) => setFormYear(Number(e.target.value))}
-                        className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-3 text-white appearance-none text-center focus:border-purple-500 focus:outline-none"
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-3 text-slate-900 dark:text-white appearance-none text-center focus:border-purple-500 focus:outline-none"
                     >
                         {years.map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
@@ -416,40 +445,46 @@ export default function App() {
           <button 
             type="submit"
             disabled={loading}
-            className="w-full bg-purple-600 hover:bg-purple-500 text-white py-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-all active:scale-95"
+            className="w-full bg-purple-600 hover:bg-purple-500 text-white py-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-purple-500/20"
           >
              {loading ? <Loader2 className="animate-spin" /> : <Search className="w-4 h-4" />}
              Buscar en el pasado
           </button>
         </form>
-        <button onClick={() => setView(ViewState.ONBOARDING)} className="mt-4 text-sm text-slate-500 w-full text-center hover:text-white">Cancelar</button>
+        <button onClick={() => setView(ViewState.ONBOARDING)} className="mt-4 text-sm text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 w-full text-center transition-colors">Cancelar</button>
       </div>
     </div>
   );
 
   // Dashboard View
   const renderDashboard = () => (
-    <div className="min-h-screen bg-slate-950 flex flex-col">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col transition-colors duration-300">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3 shadow-lg">
+      <header className="sticky top-0 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 py-3 shadow-lg transition-colors">
         <div className="flex justify-between items-center max-w-2xl mx-auto">
-          <div className="flex items-center gap-2" onClick={() => setView(ViewState.ONBOARDING)}>
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => setView(ViewState.ONBOARDING)}>
             <MapPin className="text-emergency-500 w-5 h-5" />
-            <h2 className="font-bold text-lg text-white truncate max-w-[150px] sm:max-w-none capitalize">{location.name}</h2>
+            <h2 className="font-bold text-lg text-slate-900 dark:text-white truncate max-w-[150px] sm:max-w-none capitalize">{location.name}</h2>
           </div>
           <div className="flex gap-2">
             {!historyDate && (
                <button
                   onClick={toggleMonitoring}
-                  className={`p-2 rounded-full transition-all ${isMonitoring ? 'bg-emergency-500/20 text-emergency-500 ring-2 ring-emergency-500/50' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+                  className={`p-2 rounded-full transition-all ${isMonitoring ? 'bg-emergency-500/20 text-emergency-500 ring-2 ring-emergency-500/50' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white'}`}
                   title={isMonitoring ? "Monitorización activada (Notificaciones ON)" : "Activar monitorización"}
                >
                   {isMonitoring ? <Bell className="w-5 h-5 animate-pulse" /> : <BellOff className="w-5 h-5" />}
                </button>
             )}
+             <button
+                onClick={toggleTheme}
+                className="p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-all border border-slate-200 dark:border-transparent"
+             >
+                {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+             </button>
             <button 
                onClick={() => executeSearch(location.name, historyDate || undefined, radius, activeHistoryCategory)}
-               className="p-2 bg-slate-800 rounded-full text-slate-300 hover:text-white hover:bg-slate-700 transition-all"
+               className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-white transition-all border border-slate-200 dark:border-transparent"
             >
               <RotateCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
             </button>
@@ -460,7 +495,7 @@ export default function App() {
                    setView(ViewState.ONBOARDING);
                    setIsMonitoring(false);
                }}
-               className="p-2 bg-slate-800 rounded-full text-slate-300 hover:text-white hover:bg-slate-700 transition-all"
+               className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-white transition-all border border-slate-200 dark:border-transparent"
             >
               <Search className="w-5 h-5" />
             </button>
@@ -474,36 +509,36 @@ export default function App() {
         {loading ? (
             <div className="flex flex-col items-center justify-center h-64 space-y-4 opacity-50">
                 <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
-                <p className="animate-pulse">Analizando redes sociales y fuentes oficiales...</p>
+                <p className="animate-pulse text-slate-600 dark:text-slate-400">Analizando redes sociales y fuentes oficiales...</p>
             </div>
         ) : (
             <>
                 {/* Monitor Status Banner */}
                 {isMonitoring && !historyDate && (
-                   <div className="bg-emergency-900/30 border border-emergency-500/30 rounded-lg p-3 mb-4 flex items-center justify-between animate-pulse">
-                      <div className="flex items-center gap-2 text-emergency-200">
+                   <div className="bg-emergency-50 dark:bg-emergency-900/30 border border-emergency-200 dark:border-emergency-500/30 rounded-lg p-3 mb-4 flex items-center justify-between animate-pulse">
+                      <div className="flex items-center gap-2 text-emergency-700 dark:text-emergency-200">
                          <span className="relative flex h-3 w-3">
                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
                          </span>
                          <span className="text-xs font-bold uppercase tracking-wider">Monitorizando ({radius}km)</span>
                       </div>
-                      <span className="text-xs text-emergency-200/50 font-mono">Actualiza cada 60s</span>
+                      <span className="text-xs text-emergency-600/70 dark:text-emergency-200/50 font-mono">Actualiza cada 60s</span>
                    </div>
                 )}
                 
                 {/* Historical Banner */}
                 {historyDate && (
-                     <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-3 mb-4 flex flex-col gap-1">
+                     <div className="bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-500/30 rounded-lg p-3 mb-4 flex flex-col gap-1">
                         <div className="flex items-center gap-3">
-                             <Calendar className="w-5 h-5 text-purple-400" />
+                             <Calendar className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                             <div>
-                                <div className="text-purple-200 text-sm font-bold">Archivo Histórico</div>
-                                <div className="text-purple-300/70 text-xs">Eventos del {historyDate}</div>
+                                <div className="text-purple-800 dark:text-purple-200 text-sm font-bold">Archivo Histórico</div>
+                                <div className="text-purple-600/70 dark:text-purple-300/70 text-xs">Eventos del {historyDate}</div>
                             </div>
                         </div>
                         {activeHistoryCategory !== 'TODAS' && (
-                             <div className="mt-1 ml-8 text-xs bg-purple-950/50 inline-block px-2 py-1 rounded text-purple-200 border border-purple-800">
+                             <div className="mt-1 ml-8 text-xs bg-purple-100 dark:bg-purple-950/50 inline-block px-2 py-1 rounded text-purple-700 dark:text-purple-200 border border-purple-200 dark:border-purple-800">
                                  Filtro: {activeHistoryCategory}
                              </div>
                         )}
@@ -514,22 +549,22 @@ export default function App() {
                 <StatsChart events={alerts} />
 
                 {/* AI Summary */}
-                <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-4 rounded-xl border border-slate-700 mb-6 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 rounded-full blur-2xl transform translate-x-10 -translate-y-10"></div>
-                    <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                <div className="bg-white dark:bg-gradient-to-r dark:from-slate-900 dark:to-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 mb-6 relative overflow-hidden shadow-sm dark:shadow-none transition-colors">
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-slate-100 dark:bg-white/5 rounded-full blur-2xl transform translate-x-10 -translate-y-10"></div>
+                    <h3 className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-2 flex items-center gap-1">
                         <AlertOctagon className="w-3 h-3" />
                         Informe de Situación
                     </h3>
-                    <p className="text-sm leading-relaxed text-slate-200">{analysis}</p>
+                    <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-200">{analysis}</p>
                 </div>
 
-                <h3 className="text-lg font-bold text-white mb-3">Eventos Detectados ({alerts.length})</h3>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-3">Eventos Detectados ({alerts.length})</h3>
                 <div className="space-y-4">
                     {alerts.map(event => (
                         <AlertCard key={event.id} event={event} />
                     ))}
                     {alerts.length === 0 && (
-                        <div className="text-center py-10 text-slate-500 border border-dashed border-slate-800 rounded-xl">
+                        <div className="text-center py-10 text-slate-500 border border-dashed border-slate-300 dark:border-slate-800 rounded-xl">
                             No se encontraron eventos significativos.
                         </div>
                     )}
@@ -539,7 +574,7 @@ export default function App() {
       </main>
       
       {/* Sticky Legend/Footer */}
-      <div className="fixed bottom-0 w-full bg-slate-900 border-t border-slate-800 p-3 text-xs text-slate-400 flex justify-center gap-4 z-40 max-w-2xl left-1/2 -translate-x-1/2 rounded-t-xl">
+      <div className="fixed bottom-0 w-full bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 p-3 text-xs text-slate-500 dark:text-slate-400 flex justify-center gap-4 z-40 max-w-2xl left-1/2 -translate-x-1/2 rounded-t-xl transition-colors shadow-[0_-5px_15px_rgba(0,0,0,0.05)] dark:shadow-none">
           <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500"></span> Crítico</div>
           <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-500"></span> Aviso</div>
           <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500"></span> Oficial</div>
