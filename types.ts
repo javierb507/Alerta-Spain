@@ -1,3 +1,4 @@
+
 export enum SourceType {
     OFFICIAL = 'OFFICIAL', // Government, Police, 112, AEMET
     NEWS = 'NEWS',         // Newspapers, Online Media
@@ -40,4 +41,17 @@ export enum SourceType {
     name: string;
     value: number;
     fill: string;
+  }
+
+  export interface QuickStatus {
+    weather: {
+      temp: string;
+      condition: string;
+      wind: string;
+    };
+    traffic: {
+      status: string;
+      incidents: number;
+    };
+    location: string;
   }

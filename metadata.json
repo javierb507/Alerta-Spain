@@ -1,5 +1,5 @@
 {
-  "name": "Alerta Local España",
+  "name": "Monitor de Emergencias",
   "description": "Real-time emergency and situational awareness monitor for Spain, aggregating official and social sources.",
   "requestFramePermissions": [
     "geolocation"

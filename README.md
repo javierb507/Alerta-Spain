@@ -1,20 +1,29 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
 
-# Run and deploy your AI Studio app
+# 🚨 Monitor de Emergencias España (Masterpiece Version)
 
-This contains everything you need to run your app locally.
+Sistema avanzado de inteligencia situacional diseñado para la monitorización de emergencias y sucesos en el territorio español. Impulsado por la arquitectura multimodal de **Google Gemini 3**.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1YxqPenyEHaR9jt7oJQHIv0k8DebltMhT
+## 🚀 Despliegue en Producción
+La aplicación se encuentra activa en:
+[https://alerta-local-espa-a-249485768002.us-west1.run.app/](https://alerta-local-espa-a-249485768002.us-west1.run.app/)
 
-## Run Locally
+## 🛠️ Arquitectura de Inteligencia
+La aplicación utiliza un flujo de datos de dos fases para garantizar la precisión:
+1.  **Grounding (Google Search)**: Recopilación de información fresca de fuentes como **AEMET**, **DGT**, servicios de emergencia **112** y prensa regional.
+2.  **Structuring (JSON Schema)**: La IA procesa los resultados brutos y los clasifica según su severidad y categoría, eliminando ruidos y duplicados.
 
-**Prerequisites:**  Node.js
+## 💎 Características Premium
+- **UI Command Center**: Diseño de alta fidelidad con rejilla táctica y desenfoques cinemáticos.
+- **Audio Sintético**: Feedback sensorial mediante Web Audio para acciones críticas.
+- **Social Sharing**: Integración nativa para compartir reportes de emergencia por canales de mensajería.
+- **Consultas Históricas**: Capacidad de "rebobinar" la situación de seguridad de cualquier zona en fechas pasadas.
 
+## 📦 Instalación Local
+```bash
+# Requiere Node.js y una API_KEY de Gemini en el entorno
+npm install
+npm run dev
+```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+---
+*Este proyecto es una herramienta de agregación de datos y no sustituye a las autoridades oficiales. En caso de emergencia real en España, llame inmediatamente al 112.*
