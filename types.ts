@@ -17,6 +17,13 @@ export enum SourceType {
     url?: string;
     type: SourceType;
   }
+
+  export interface CustomSource {
+    id: string;
+    name: string;
+    url: string;
+    type: SourceType;
+  }
   
   export interface AlertEvent {
     id: string;

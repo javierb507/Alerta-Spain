@@ -1,12 +1,11 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { AlertEvent, SeverityLevel, SourceType, QuickStatus } from "../types";
+import { AlertEvent, SeverityLevel, SourceType, QuickStatus, CustomSource } from "../types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 /**
  * Obtiene un resumen rápido de clima y tráfico. 
- * Si se pasan coordenadas, la búsqueda es mucho más precisa.
  */
 export const fetchQuickStatus = async (location: string = "España", coords?: {lat: number, lng: number}): Promise<QuickStatus> => {
   const locationContext = coords 
@@ -69,13 +68,14 @@ export const fetchQuickStatus = async (location: string = "España", coords?: {l
 
 /**
  * Servicio de monitorización de emergencias con filtrado de fuentes.
- * Ahora incluye búsqueda explícita de transporte público (Renfe, ADIF, Metro).
+ * Incluye fuentes personalizadas del usuario.
  */
 export const fetchAlerts = async (
   location: string, 
   date?: string, 
   radius?: number, 
-  categoryFilter?: string
+  categoryFilter?: string,
+  customSources: CustomSource[] = []
 ): Promise<{ events: AlertEvent[], analysis: string }> => {
   const isHistorical = !!date;
   const radiusContext = radius ? ` en un radio de ${radius} kilómetros` : '';
@@ -83,9 +83,13 @@ export const fetchAlerts = async (
     ? ` filtrando por la categoría "${categoryFilter}"` 
     : '';
 
+  const customSourcesContext = customSources.length > 0 
+    ? ` Además de las fuentes habituales, presta especial atención a estas fuentes locales configuradas por el usuario: ${customSources.map(s => `${s.name} (${s.url})`).join(', ')}.` 
+    : '';
+
   const searchPrompt = isHistorical 
-    ? `Busca reportes de emergencias, incidencias ferroviarias (Renfe, ADIF), metro, tráfico, incendios y alertas climáticas en ${location}${radiusContext} el día ${date}${categoryContext}. Cita fuentes oficiales españolas.`
-    : `Detecta alertas ACTIVAS de AEMET, DGT, Renfe, ADIF, Metro, incendios y emergencias 112 en ${location}${radiusContext} AHORA. Prioriza fuentes oficiales como Renfe, Metro, ADIF y servicios de emergencia nacionales.`;
+    ? `Busca reportes de emergencias, incidencias ferroviarias (Renfe, ADIF), metro, tráfico, incendios y alertas climáticas en ${location}${radiusContext} el día ${date}${categoryContext}. Cita fuentes oficiales españolas.${customSourcesContext}`
+    : `Detecta alertas ACTIVAS de AEMET, DGT, Renfe, ADIF, Metro, incendios y emergencias 112 en ${location}${radiusContext} AHORA. Prioriza fuentes oficiales como Renfe, Metro, ADIF y servicios de emergencia nacionales.${customSourcesContext}`;
 
   try {
     const searchResponse = await ai.models.generateContent({
@@ -160,8 +164,8 @@ export const fetchAlerts = async (
       const sourceFromList = groundingSources.find(s => s.id === evt.sourceIndex);
       const finalUrl = sourceFromList ? sourceFromList.uri : "";
       
-      const officialKeywords = ['gob.es', 'aemet.es', 'dgt.es', 'renfe.com', 'adif.es', 'metro', 'emt'];
-      const isOfficial = officialKeywords.some(kw => finalUrl.includes(kw)) || evt.sourceName.toLowerCase().includes('112') || evt.sourceName.toLowerCase().includes('oficial');
+      const officialKeywords = ['gob.es', 'aemet.es', 'dgt.es', 'renfe.com', 'adif.es', 'metro', 'emt', ...customSources.map(s => s.url.toLowerCase())];
+      const isOfficial = officialKeywords.some(kw => finalUrl.toLowerCase().includes(kw)) || evt.sourceName.toLowerCase().includes('112') || evt.sourceName.toLowerCase().includes('oficial');
 
       return {
         id: `evt-${Math.abs(hash)}`,
