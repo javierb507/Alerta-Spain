@@ -5,6 +5,13 @@
 
 Sistema avanzado de inteligencia situacional diseñado para la monitorización de emergencias y sucesos en el territorio español. Impulsado por la arquitectura multimodal de **Google Gemini 3**.
 
+## 🌲 El Origen: Por qué existe este proyecto
+Todo surgió durante un paseo por **Alcalá de Henares**. Mientras caminaba por el campo cerca del río, vi un camión de bomberos y un helicóptero despegando. En ese momento de incertidumbre, intenté buscar información en tiempo real desde mi móvil para saber qué estaba pasando y si había algún peligro cercano, pero fue imposible encontrar una fuente centralizada que informara de incidentes tan localizados en el acto.
+
+Me di cuenta de que, aunque existen muchas herramientas de respuesta a emergencias, la información suele estar dispersa y no es lo suficientemente concreta para sitios pequeños o eventos muy específicos en un radio cercano.
+
+**Monitor de Emergencias** nace para solucionar eso: permitir que cualquier persona pueda buscar en un radio de kilómetros determinado si hay algún incidente reportado, unificando en un solo lugar alertas de fuentes locales, redes sociales, el 112, Protección Civil y la DGT.
+
 ## 🚀 Despliegue en Producción
 La aplicación se encuentra activa en:
 [https://alerta-local-espa-a-249485768002.us-west1.run.app/](https://alerta-local-espa-a-249485768002.us-west1.run.app/)
