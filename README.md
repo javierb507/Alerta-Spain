@@ -48,6 +48,9 @@ Una vez recolectada la información bruta, el modelo **Gemini 3 Pro** realiza un
 4.  **Clave de API**: Crea un archivo `.env` con `GEMINI_API_KEY=tu_clave`.
 5.  **Ejecutar**: `npm run dev`
 
+## ⚖️ Licencia
+Este proyecto está bajo la licencia **GPLv3**. Consulte el archivo `LICENSE` para más detalles.
+
 ---
 ### ⚖️ Descargo de Responsabilidad (Disclaimer)
 *Esta aplicación es un agregador de información basado en Inteligencia Artificial. Aunque se priorizan fuentes oficiales, los datos pueden tener retrasos o errores de interpretación. No sustituye en ningún caso a los canales de comunicación oficiales del Estado. **En caso de emergencia real, llame siempre al 112.***
@@ -104,6 +107,9 @@ Once raw information is gathered, the **Gemini 3 Pro** model performs a forensic
 3.  **Dependencies**: `npm install`
 4.  **API Key**: Create a `.env` file with `GEMINI_API_KEY=your_key`.
 5.  **Run**: `npm run dev`
+
+## ⚖️ License
+This project is licensed under **GPLv3**. See the `LICENSE` file for more details.
 
 ---
 ### ⚖️ Disclaimer
