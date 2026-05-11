@@ -1,5 +1,7 @@
 
-# 🚨 Monitor de Emergencias España (Masterpiece Version)
+# 🚨 Monitor de Emergencias España v2.0 (Masterpiece Version)
+
+**Última actualización:** 11 de Mayo, 2026 - 13:20 CEST
 
 Sistema avanzado de inteligencia situacional diseñado para la monitorización de emergencias y sucesos en el territorio español. Impulsado por la arquitectura multimodal de **Google Gemini 3**.
 
@@ -7,23 +9,38 @@ Sistema avanzado de inteligencia situacional diseñado para la monitorización d
 La aplicación se encuentra activa en:
 [https://alerta-local-espa-a-249485768002.us-west1.run.app/](https://alerta-local-espa-a-249485768002.us-west1.run.app/)
 
-## 🛠️ Arquitectura de Inteligencia
-La aplicación utiliza un flujo de datos de dos fases para garantizar la precisión:
-1.  **Grounding (Google Search)**: Recopilación de información fresca de fuentes como **AEMET**, **DGT**, servicios de emergencia **112** y prensa regional.
-2.  **Structuring (JSON Schema)**: La IA procesa los resultados brutos y los clasifica según su severidad y categoría, eliminando ruidos y duplicados.
+## 🧠 Cómo funciona: El Motor de Inteligencia
 
-## 💎 Características Premium
-- **UI Command Center**: Diseño de alta fidelidad con rejilla táctica y desenfoques cinemáticos.
-- **Audio Sintético**: Feedback sensorial mediante Web Audio para acciones críticas.
-- **Social Sharing**: Integración nativa para compartir reportes de emergencia por canales de mensajería.
-- **Consultas Históricas**: Capacidad de "rebobinar" la situación de seguridad de cualquier zona en fechas pasadas.
+Este sistema no utiliza una base de datos estática; en su lugar, emplea una **Arquitectura de IA en Dos Fases** para garantizar que la información sea real y esté actualizada al minuto:
 
-## 📦 Instalación Local
-```bash
-# Requiere Node.js y una API_KEY de Gemini en el entorno
-npm install
-npm run dev
-```
+### Fase 1: Percepción y Grounding (Google Search)
+El sistema utiliza el modelo **Gemini 3 Flash** con la herramienta de búsqueda de Google. Este modelo escanea activamente la web buscando:
+- **Fuentes Oficiales**: AEMET (Meteo), DGT (Tráfico), Renfe/ADIF (Transporte), y servicios de emergencia 112.
+- **Señales Sociales**: Reportes ciudadanos y noticias de última hora en prensa local y nacional.
+
+### Fase 2: Análisis Crítico y Estructuración (JSON Schema)
+Una vez recolectada la información bruta, el modelo **Gemini 3 Pro** realiza un análisis forense de los datos para:
+1.  **Deduplicar**: Eliminar reportes redundantes de la misma emergencia.
+2.  **Clasificar Severidad**: Asignar niveles (CRITICAL, WARNING, INFO) basados en el riesgo real para la vida y la propiedad.
+3.  **Mapeo de Fuentes**: Vincular cada alerta con su URL de origen verificada para evitar alucinaciones de la IA.
+4.  **Resumen Ejecutivo**: Generar un análisis de riesgo textual para el usuario.
+
+## 🛠️ Características Principales
+
+- **Dashboard Táctico**: Interfaz inspirada en centros de mando militares, optimizada para la legibilidad bajo estrés.
+- **Audio de Grado Profesional**: Feedback auditivo mediante **Web Audio API** para alertar al usuario de cambios críticos sin necesidad de mirar la pantalla.
+- **Modo Monitor Activo**: El sistema puede configurarse para refrescarse automáticamente cada 60 segundos, enviando notificaciones del navegador si se detectan nuevas amenazas.
+- **Filtros Inteligentes**: Capacidad de filtrar por radio (km), categorías específicas (Incendios, Clima, Transporte) o fechas históricas.
+- **Fuentes Personalizadas**: Los usuarios avanzados pueden añadir URLs específicas para que la IA las monitorice prioritariamente.
+
+## 📦 Instalación y Configuración Local
+
+1.  **Requisitos**: [Node.js](https://nodejs.org/) (v18+).
+2.  **Clonar**: `git clone https://github.com/javierb507/Alerta-espa-a.git`
+3.  **Dependencias**: `npm install`
+4.  **Clave de API**: Crea un archivo `.env` con `GEMINI_API_KEY=tu_clave`.
+5.  **Ejecutar**: `npm run dev`
 
 ---
-*Este proyecto es una herramienta de agregación de datos y no sustituye a las autoridades oficiales. En caso de emergencia real en España, llame inmediatamente al 112.*
+### ⚖️ Descargo de Responsabilidad (Disclaimer)
+*Esta aplicación es un agregador de información basado en Inteligencia Artificial. Aunque se priorizan fuentes oficiales, los datos pueden tener retrasos o errores de interpretación. No sustituye en ningún caso a los canales de comunicación oficiales del Estado. **En caso de emergencia real, llame siempre al 112.***

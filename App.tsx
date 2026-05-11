@@ -51,7 +51,8 @@ export default function App() {
 
   const currentYear = new Date().getFullYear();
   const authorName = "Javier Ballesteros";
-  const DEPLOYMENT_DATE = "08/03/2025 15:45 CET"; // Fecha de despliegue manual
+  const APP_VERSION = "2.0";
+  const DEPLOYMENT_DATE = "11/05/2026 13:20 CEST"; // Actualizado a v2.0
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('theme');
@@ -253,7 +254,7 @@ export default function App() {
         Autor: {authorName} • {currentYear}
       </p>
       <p className="text-[7px] font-bold uppercase tracking-[0.3em] text-slate-400 dark:text-slate-600">
-        Último despliegue: {DEPLOYMENT_DATE}
+        v{APP_VERSION} • Último despliegue: {DEPLOYMENT_DATE}
       </p>
     </div>
   );
