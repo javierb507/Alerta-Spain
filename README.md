@@ -51,3 +51,60 @@ Una vez recolectada la información bruta, el modelo **Gemini 3 Pro** realiza un
 ---
 ### ⚖️ Descargo de Responsabilidad (Disclaimer)
 *Esta aplicación es un agregador de información basado en Inteligencia Artificial. Aunque se priorizan fuentes oficiales, los datos pueden tener retrasos o errores de interpretación. No sustituye en ningún caso a los canales de comunicación oficiales del Estado. **En caso de emergencia real, llame siempre al 112.***
+
+<br/>
+
+---
+
+# 🚨 Spain Emergency Monitor v2.0 (Masterpiece Version)
+
+**Last Update:** May 11, 2026 - 13:20 CEST
+
+Advanced situational intelligence system designed for monitoring emergencies and incidents within the Spanish territory. Powered by **Google Gemini 3** multimodal architecture.
+
+## 🌲 The Origin: Why this project exists
+It all started during a walk in **Alcalá de Henares**. While walking through the countryside near the river, I saw a fire truck and a helicopter taking off. In that moment of uncertainty, I tried searching for real-time information on my mobile to find out what was happening and if there was any nearby danger, but it was impossible to find a centralized source reporting such localized incidents on the spot.
+
+I realized that, although many emergency response tools exist, the information is often dispersed and not specific enough for small or very specific events in a nearby radius.
+
+**Emergency Monitor** was born to solve that: allowing anyone to search within a specific radius if there are any reported incidents, unifying in one place alerts from local sources, social media, 112, Civil Protection, and DGT.
+
+## 🚀 Production Deployment
+The application is live at:
+[https://alerta-local-espa-a-249485768002.us-west1.run.app/](https://alerta-local-espa-a-249485768002.us-west1.run.app/)
+
+## 🧠 How it works: The Intelligence Engine
+
+This system doesn't use a static database; instead, it employs a **Two-Phase AI Architecture** to ensure information is real and up-to-the-minute:
+
+### Phase 1: Perception and Grounding (Google Search)
+The system uses the **Gemini 3 Flash** model with Google Search Tool. This model actively scans the web looking for:
+- **Official Sources**: AEMET (Weather), DGT (Traffic), Renfe/ADIF (Transport), and 112 emergency services.
+- **Social Signals**: Citizen reports and breaking news in local and national press.
+
+### Phase 2: Critical Analysis and Structuring (JSON Schema)
+Once raw information is gathered, the **Gemini 3 Pro** model performs a forensic analysis of the data to:
+1.  **De-duplicate**: Remove redundant reports of the same emergency.
+2.  **Classify Severity**: Assign levels (CRITICAL, WARNING, INFO) based on real risk to life and property.
+3.  **Source Mapping**: Link each alert with its verified source URL to avoid AI hallucinations.
+4.  **Executive Summary**: Generate a textual risk analysis for the user.
+
+## 🛠️ Main Features
+
+- **Tactical Dashboard**: Interface inspired by military command centers, optimized for legibility under stress.
+- **Professional Grade Audio**: Auditory feedback via **Web Audio API** to alert the user of critical changes without needing to look at the screen.
+- **Active Monitor Mode**: The system can be configured to auto-refresh every 60 seconds, sending browser notifications if new threats are detected.
+- **Smart Filters**: Ability to filter by radius (km), specific categories (Fire, Weather, Transport), or historical dates.
+- **Custom Sources**: Advanced users can add specific URLs for the AI to monitor with priority.
+
+## 📦 Local Installation and Configuration
+
+1.  **Requirements**: [Node.js](https://nodejs.org/) (v18+).
+2.  **Clone**: `git clone https://github.com/javierb507/Alerta-espa-a.git`
+3.  **Dependencies**: `npm install`
+4.  **API Key**: Create a `.env` file with `GEMINI_API_KEY=your_key`.
+5.  **Run**: `npm run dev`
+
+---
+### ⚖️ Disclaimer
+*This application is an information aggregator based on Artificial Intelligence. Although official sources are prioritized, data may be delayed or misinterpreted. It is in no case a substitute for official State communication channels. **In case of a real emergency, always call 112.***
