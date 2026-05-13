@@ -35,6 +35,7 @@ Una vez recolectada la información bruta, el modelo **Gemini 3 Pro** realiza un
 ## 🛠️ Características Principales
 
 - **Dashboard Táctico**: Interfaz inspirada en centros de mando militares, optimizada para la legibilidad bajo estrés.
+- **Progressive Web App (PWA)**: Instalable en dispositivos móviles y escritorio como una aplicación nativa, con soporte básico para uso sin conexión.
 - **Audio de Grado Profesional**: Feedback auditivo mediante **Web Audio API** para alertar al usuario de cambios críticos sin necesidad de mirar la pantalla.
 - **Modo Monitor Activo**: El sistema puede configurarse para refrescarse automáticamente cada 60 segundos, enviando notificaciones del navegador si se detectan nuevas amenazas.
 - **Filtros Inteligentes**: Capacidad de filtrar por radio (km), categorías específicas (Incendios, Clima, Transporte) o fechas históricas.
@@ -95,6 +96,7 @@ Once raw information is gathered, the **Gemini 3 Pro** model performs a forensic
 ## 🛠️ Main Features
 
 - **Tactical Dashboard**: Interface inspired by military command centers, optimized for legibility under stress.
+- **Progressive Web App (PWA)**: Installable on mobile and desktop devices as a native-like app, with basic offline support.
 - **Professional Grade Audio**: Auditory feedback via **Web Audio API** to alert the user of critical changes without needing to look at the screen.
 - **Active Monitor Mode**: The system can be configured to auto-refresh every 60 seconds, sending browser notifications if new threats are detected.
 - **Smart Filters**: Ability to filter by radius (km), specific categories (Fire, Weather, Transport), or historical dates.
