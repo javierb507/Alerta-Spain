@@ -137,8 +137,11 @@ export default function App() {
     let interval: number;
     if (isMonitoring && location.name && view === ViewState.DASHBOARD) {
       interval = window.setInterval(() => {
+        // Cada refresco consume búsqueda web + 2 llamadas LLM: no refrescar
+        // con la pestaña en segundo plano para no quemar cuota/créditos.
+        if (document.hidden) return;
         refreshRef.current();
-      }, 60000); // Refresco cada 60 segundos
+      }, 300000); // Refresco cada 5 minutos
     }
     return () => {
       if (interval) clearInterval(interval);
