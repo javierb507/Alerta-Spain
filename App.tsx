@@ -7,7 +7,9 @@ import {
   Plus, Trash2, Globe, X, Share2
 } from 'lucide-react';
 import { AlertEvent, UserLocation, SeverityLevel, QuickStatus, CustomSource, SourceType } from './types';
-import { fetchAlerts, fetchQuickStatus } from './services/geminiService';
+import { fetchAlerts } from './services/alertsService';
+import { AIConfig, LLM_PRESETS, loadConfig, saveConfig, getPreset } from './services/config';
+import { fetchQuickStatus } from './services/weatherService';
 import { AudioService } from './services/audioService';
 import AlertCard from './components/AlertCard';
 import StatsChart from './components/StatsChart';
@@ -41,6 +43,20 @@ export default function App() {
   const [newSourceName, setNewSourceName] = useState('');
   const [newSourceUrl, setNewSourceUrl] = useState('');
   const [newSourceType, setNewSourceType] = useState<SourceType>(SourceType.OFFICIAL);
+
+  // Configuración de proveedores de IA/búsqueda (persistida en localStorage)
+  const [aiConfig, setAiConfig] = useState<AIConfig>(() => loadConfig());
+  const updateAIConfig = (patch: Partial<AIConfig>) => {
+    setAiConfig(prev => {
+      const next = { ...prev, ...patch };
+      saveConfig(next);
+      return next;
+    });
+  };
+  const handlePresetChange = (id: string) => {
+    const preset = getPreset(id);
+    updateAIConfig({ llmPreset: id, llmBaseUrl: preset.baseUrl, llmModel: preset.defaultModel });
+  };
 
   // Formulario de Historia
   const [formDay, setFormDay] = useState(new Date().getDate());
@@ -86,22 +102,22 @@ export default function App() {
       if ('geolocation' in navigator) {
         navigator.geolocation.getCurrentPosition(
           async (pos) => {
-            const data = await fetchQuickStatus("Mi ubicación", { 
-              lat: pos.coords.latitude, 
-              lng: pos.coords.longitude 
+            const data = await fetchQuickStatus({
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude
             });
             setQuickStatus(data);
             setIsQuickLoading(false);
           },
           async () => {
-            const data = await fetchQuickStatus("España");
+            const data = await fetchQuickStatus();
             setQuickStatus(data);
             setIsQuickLoading(false);
           },
           { timeout: 5000, enableHighAccuracy: true }
         );
       } else {
-        const data = await fetchQuickStatus("España");
+        const data = await fetchQuickStatus();
         setQuickStatus(data);
         setIsQuickLoading(false);
       }
@@ -109,12 +125,19 @@ export default function App() {
     initQuickStatus();
   }, []);
 
-  // Timer para refresco automático cuando la monitorización está activa
+  // Timer para refresco automático cuando la monitorización está activa.
+  // Se usa un ref para que el interval siempre llame a la versión actual de refreshAlerts
+  // (evita closures obsoletos sobre radius/customSources).
+  const refreshRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    refreshRef.current = refreshAlerts;
+  });
+
   useEffect(() => {
     let interval: number;
     if (isMonitoring && location.name && view === ViewState.DASHBOARD) {
       interval = window.setInterval(() => {
-        refreshAlerts();
+        refreshRef.current();
       }, 60000); // Refresco cada 60 segundos
     }
     return () => {
@@ -126,7 +149,7 @@ export default function App() {
     if (Notification.permission === 'granted' && isMonitoring) {
       new Notification(`🚨 MONITOR ESPAÑA: ${alert.title}`, {
         body: alert.description,
-        icon: 'https://alerta-local-espa-a-249485768002.us-west1.run.app/favicon.ico'
+        icon: '/logo.svg'
       });
     }
   };
@@ -173,8 +196,13 @@ export default function App() {
   const executeSearch = async (locName: string, date?: string, searchRadius?: number) => {
     setLoading(true);
     try {
+      // Al cambiar de ubicación, las alertas vistas de la anterior ya no aplican
+      if (locName !== location.name) {
+        seenAlertIds.current.clear();
+      }
+
       const result = await fetchAlerts(locName, date, searchRadius || radius, 'TODAS', customSources);
-      
+
       // Lógica de notificaciones para eventos nuevos
       if (!date) {
         result.events.forEach(evt => {
@@ -191,12 +219,8 @@ export default function App() {
       setAnalysis(result.analysis);
       setLastUpdate(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
       
-      if (!date) {
-        setLocation({ name: locName, isGPS: false });
-        setHistoryDate('');
-      } else {
-        setHistoryDate(date);
-      }
+      setLocation({ name: locName, isGPS: false });
+      setHistoryDate(date || '');
       
       AudioService.playSuccess();
       setView(ViewState.DASHBOARD);
@@ -216,10 +240,14 @@ export default function App() {
   };
 
   const handleGPSLocation = (target: 'current' | 'history') => {
+    if (!('geolocation' in navigator)) {
+      AudioService.playError();
+      alert("Tu navegador no soporta geolocalización.");
+      return;
+    }
     setLoading(true);
     AudioService.playScan();
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
+    navigator.geolocation.getCurrentPosition(
         async (pos) => {
           const locName = `${pos.coords.latitude.toFixed(3)}, ${pos.coords.longitude.toFixed(3)}`;
           if (target === 'current') {
@@ -233,10 +261,9 @@ export default function App() {
         () => { 
           setLoading(false); 
           AudioService.playError();
-          alert("Error de GPS."); 
+          alert("Error de GPS.");
         }
       );
-    }
   };
 
   const handleHistorySearch = (e: React.FormEvent) => {
@@ -283,6 +310,26 @@ export default function App() {
                     <button onClick={toggleMonitoring} className={`w-12 h-6 rounded-full relative transition-colors ${isMonitoring ? 'bg-red-500' : 'bg-slate-300 dark:bg-slate-600'}`}>
                         <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${isMonitoring ? 'left-7' : 'left-1'}`}></div>
                     </button>
+                </div>
+
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Proveedor de IA</p>
+                <div className="space-y-3 bg-slate-50 dark:bg-slate-950/50 p-4 rounded-3xl border border-slate-100 dark:border-slate-800">
+                    <select value={aiConfig.llmPreset} onChange={(e) => handlePresetChange(e.target.value)} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold outline-none appearance-none">
+                        {LLM_PRESETS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                    {aiConfig.llmPreset === 'custom' && (
+                        <input type="text" placeholder="Base URL (ej: https://api.../v1)" value={aiConfig.llmBaseUrl} onChange={(e) => updateAIConfig({ llmBaseUrl: e.target.value })} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold outline-none" />
+                    )}
+                    <input type="text" placeholder="Modelo" value={aiConfig.llmModel} onChange={(e) => updateAIConfig({ llmModel: e.target.value })} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold outline-none" />
+                    <input type="password" placeholder="Clave de API del proveedor" value={aiConfig.llmApiKey} onChange={(e) => updateAIConfig({ llmApiKey: e.target.value })} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold outline-none" />
+                    <p className="text-[9px] text-slate-400 font-bold leading-snug">Las claves se guardan solo en este dispositivo (localStorage), nunca en el servidor.</p>
+                </div>
+
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Búsqueda Web</p>
+                <div className="space-y-3 bg-slate-50 dark:bg-slate-950/50 p-4 rounded-3xl border border-slate-100 dark:border-slate-800">
+                    <input type="password" placeholder="Clave Gemini (Google Search grounding)" value={aiConfig.geminiApiKey} onChange={(e) => updateAIConfig({ geminiApiKey: e.target.value })} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold outline-none" />
+                    <input type="password" placeholder="Clave Tavily (alternativa gratuita)" value={aiConfig.tavilyApiKey} onChange={(e) => updateAIConfig({ tavilyApiKey: e.target.value })} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold outline-none" />
+                    <p className="text-[9px] text-slate-400 font-bold leading-snug">Se usa Gemini si tiene clave; si falla o no hay, Tavily (gratis en tavily.com).</p>
                 </div>
 
                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Fuentes Locales de Información</p>

@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => {
         react(),
         VitePWA({
           registerType: 'autoUpdate',
-          includeAssets: ['favicon.ico', 'logo.svg'],
+          includeAssets: ['logo.svg'],
           manifest: {
             name: 'Monitor de Emergencias España',
             short_name: 'Emergencias ES',
