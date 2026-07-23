@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Navigation, Search, History, AlertOctagon, RotateCw, Loader2, 
-  Bell, BellOff, Sun, Moon, Info, ShieldAlert, Radio, ShieldCheck, Siren, 
-  ArrowLeft, Clock, Activity, CloudSun, Car, Wind, Settings,
-  Plus, Trash2, Globe, X, Share2
+import {
+  Navigation, Search, History, AlertOctagon, RotateCw, Loader2,
+  Bell, BellOff, Sun, Moon, ShieldAlert, Radio, ShieldCheck, Siren,
+  ArrowLeft, Clock, Activity, CloudSun, Car, Settings,
+  Trash2, Globe, X
 } from 'lucide-react';
 import { AlertEvent, UserLocation, SeverityLevel, QuickStatus, CustomSource, SourceType } from './types';
 import { fetchAlerts } from './services/alertsService';
@@ -25,7 +25,6 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [radius, setRadius] = useState<number>(5); 
   const [lastUpdate, setLastUpdate] = useState<string>('');
-  const [permission, setPermission] = useState<NotificationPermission>('default');
   const [quickStatus, setQuickStatus] = useState<QuickStatus | null>(null);
   const [isQuickLoading, setIsQuickLoading] = useState(false);
   
@@ -90,12 +89,6 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('is_monitoring', isMonitoring.toString());
   }, [isMonitoring]);
-
-  useEffect(() => {
-    if ('Notification' in window) {
-      setPermission(Notification.permission);
-    }
-  }, []);
 
   useEffect(() => {
     const initQuickStatus = async () => {
@@ -164,7 +157,6 @@ export default function App() {
     if (!isMonitoring) {
       if ('Notification' in window) {
         const result = await Notification.requestPermission();
-        setPermission(result);
         if (result === 'granted') {
           setIsMonitoring(true);
           AudioService.playSuccess();
@@ -181,7 +173,7 @@ export default function App() {
   const addCustomSource = () => {
     if (!newSourceName || !newSourceUrl) return;
     const newSource: CustomSource = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: Math.random().toString(36).slice(2, 11),
       name: newSourceName,
       url: newSourceUrl,
       type: newSourceType
@@ -284,6 +276,11 @@ export default function App() {
 
   const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
   const years = Array.from({ length: 10 }, (_, i) => currentYear - i);
+  // Días válidos según mes/año seleccionados (evita fechas como 31 de febrero)
+  const daysInMonth = new Date(formYear, formMonth + 1, 0).getDate();
+  useEffect(() => {
+    if (formDay > daysInMonth) setFormDay(daysInMonth);
+  }, [formDay, daysInMonth]);
 
   const renderFooter = (opacityClass: string = "opacity-40") => (
     <div className={`text-center space-y-1 py-4 ${opacityClass}`}>
@@ -462,7 +459,7 @@ export default function App() {
                            <input type="text" required placeholder="Ciudad..." value={historyLocation} onChange={(e) => setHistoryLocation(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-4 text-sm font-bold" />
                         </div>
                         <div className="grid grid-cols-3 gap-2">
-                            <select value={formDay} onChange={(e) => setFormDay(Number(e.target.value))} className="bg-slate-50 dark:bg-slate-950 border dark:border-slate-800 rounded-xl py-3 text-xs font-bold text-center appearance-none">{Array.from({length: 31}, (_, i) => <option key={i+1} value={i+1}>{i+1}</option>)}</select>
+                            <select value={formDay} onChange={(e) => setFormDay(Number(e.target.value))} className="bg-slate-50 dark:bg-slate-950 border dark:border-slate-800 rounded-xl py-3 text-xs font-bold text-center appearance-none">{Array.from({length: daysInMonth}, (_, i) => <option key={i+1} value={i+1}>{i+1}</option>)}</select>
                             <select value={formMonth} onChange={(e) => setFormMonth(Number(e.target.value))} className="bg-slate-50 dark:bg-slate-950 border dark:border-slate-800 rounded-xl py-3 text-xs font-bold text-center appearance-none">{months.map((m, i) => <option key={i} value={i}>{m}</option>)}</select>
                             <select value={formYear} onChange={(e) => setFormYear(Number(e.target.value))} className="bg-slate-50 dark:bg-slate-950 border dark:border-slate-800 rounded-xl py-3 text-xs font-bold text-center appearance-none">{years.map(y => <option key={y} value={y}>{y}</option>)}</select>
                         </div>
