@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Navigation, Search, History, AlertOctagon, RotateCw, Loader2, 
-  Bell, BellOff, Sun, Moon, Info, ShieldAlert, Radio, ShieldCheck, Siren, 
-  ArrowLeft, Clock, Activity, CloudSun, Car, Wind, Settings,
-  Plus, Trash2, Globe, X, Share2
+import {
+  Navigation, Search, History, AlertOctagon, RotateCw, Loader2,
+  Bell, BellOff, Sun, Moon, ShieldAlert, Radio, ShieldCheck, Siren,
+  ArrowLeft, Clock, Activity, CloudSun, Car, Settings,
+  Trash2, Globe, X
 } from 'lucide-react';
 import { AlertEvent, UserLocation, SeverityLevel, QuickStatus, CustomSource, SourceType } from './types';
 import { fetchAlerts } from './services/alertsService';
@@ -21,10 +21,10 @@ export default function App() {
   const [location, setLocation] = useState<UserLocation>({ name: '', isGPS: false });
   const [alerts, setAlerts] = useState<AlertEvent[]>([]);
   const [analysis, setAnalysis] = useState<string>('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('TODAS');
   const [loading, setLoading] = useState(false);
   const [radius, setRadius] = useState<number>(5); 
   const [lastUpdate, setLastUpdate] = useState<string>('');
-  const [permission, setPermission] = useState<NotificationPermission>('default');
   const [quickStatus, setQuickStatus] = useState<QuickStatus | null>(null);
   const [isQuickLoading, setIsQuickLoading] = useState(false);
   
@@ -91,12 +91,6 @@ export default function App() {
   }, [isMonitoring]);
 
   useEffect(() => {
-    if ('Notification' in window) {
-      setPermission(Notification.permission);
-    }
-  }, []);
-
-  useEffect(() => {
     const initQuickStatus = async () => {
       setIsQuickLoading(true);
       if ('geolocation' in navigator) {
@@ -137,8 +131,11 @@ export default function App() {
     let interval: number;
     if (isMonitoring && location.name && view === ViewState.DASHBOARD) {
       interval = window.setInterval(() => {
+        // Cada refresco consume búsqueda web + 2 llamadas LLM: no refrescar
+        // con la pestaña en segundo plano para no quemar cuota/créditos.
+        if (document.hidden) return;
         refreshRef.current();
-      }, 60000); // Refresco cada 60 segundos
+      }, 300000); // Refresco cada 5 minutos
     }
     return () => {
       if (interval) clearInterval(interval);
@@ -160,7 +157,6 @@ export default function App() {
     if (!isMonitoring) {
       if ('Notification' in window) {
         const result = await Notification.requestPermission();
-        setPermission(result);
         if (result === 'granted') {
           setIsMonitoring(true);
           AudioService.playSuccess();
@@ -177,7 +173,7 @@ export default function App() {
   const addCustomSource = () => {
     if (!newSourceName || !newSourceUrl) return;
     const newSource: CustomSource = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: Math.random().toString(36).slice(2, 11),
       name: newSourceName,
       url: newSourceUrl,
       type: newSourceType
@@ -201,7 +197,7 @@ export default function App() {
         seenAlertIds.current.clear();
       }
 
-      const result = await fetchAlerts(locName, date, searchRadius || radius, 'TODAS', customSources);
+      const result = await fetchAlerts(locName, date, searchRadius || radius, categoryFilter, customSources);
 
       // Lógica de notificaciones para eventos nuevos
       if (!date) {
@@ -272,8 +268,19 @@ export default function App() {
     executeSearch(historyLocation, dateStr);
   };
 
+  // Filtro de categorías: filtra la lista en cliente y se pasa al prompt de búsqueda.
+  const CATEGORIES = ['TODAS', 'Incendio', 'Clima', 'Tráfico', 'Transporte', 'Seguridad'];
+  const visibleAlerts = categoryFilter === 'TODAS'
+    ? alerts
+    : alerts.filter(a => (a.category || '').toLowerCase().includes(categoryFilter.toLowerCase()));
+
   const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
   const years = Array.from({ length: 10 }, (_, i) => currentYear - i);
+  // Días válidos según mes/año seleccionados (evita fechas como 31 de febrero)
+  const daysInMonth = new Date(formYear, formMonth + 1, 0).getDate();
+  useEffect(() => {
+    if (formDay > daysInMonth) setFormDay(daysInMonth);
+  }, [formDay, daysInMonth]);
 
   const renderFooter = (opacityClass: string = "opacity-40") => (
     <div className={`text-center space-y-1 py-4 ${opacityClass}`}>
@@ -452,7 +459,7 @@ export default function App() {
                            <input type="text" required placeholder="Ciudad..." value={historyLocation} onChange={(e) => setHistoryLocation(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-4 text-sm font-bold" />
                         </div>
                         <div className="grid grid-cols-3 gap-2">
-                            <select value={formDay} onChange={(e) => setFormDay(Number(e.target.value))} className="bg-slate-50 dark:bg-slate-950 border dark:border-slate-800 rounded-xl py-3 text-xs font-bold text-center appearance-none">{Array.from({length: 31}, (_, i) => <option key={i+1} value={i+1}>{i+1}</option>)}</select>
+                            <select value={formDay} onChange={(e) => setFormDay(Number(e.target.value))} className="bg-slate-50 dark:bg-slate-950 border dark:border-slate-800 rounded-xl py-3 text-xs font-bold text-center appearance-none">{Array.from({length: daysInMonth}, (_, i) => <option key={i+1} value={i+1}>{i+1}</option>)}</select>
                             <select value={formMonth} onChange={(e) => setFormMonth(Number(e.target.value))} className="bg-slate-50 dark:bg-slate-950 border dark:border-slate-800 rounded-xl py-3 text-xs font-bold text-center appearance-none">{months.map((m, i) => <option key={i} value={i}>{m}</option>)}</select>
                             <select value={formYear} onChange={(e) => setFormYear(Number(e.target.value))} className="bg-slate-50 dark:bg-slate-950 border dark:border-slate-800 rounded-xl py-3 text-xs font-bold text-center appearance-none">{years.map(y => <option key={y} value={y}>{y}</option>)}</select>
                         </div>
@@ -508,10 +515,21 @@ export default function App() {
                         <div className="space-y-4">
                            <div className="flex items-center justify-between px-2">
                               <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><Siren className="w-4 h-4" /> Alertas Operativas</h3>
-                              <span className="text-[10px] font-bold text-blue-600 bg-blue-500/10 px-3 py-1 rounded-full uppercase">{alerts.length} Eventos</span>
+                              <span className="text-[10px] font-bold text-blue-600 bg-blue-500/10 px-3 py-1 rounded-full uppercase">{visibleAlerts.length} Eventos</span>
                            </div>
-                           {alerts.map(evt => <AlertCard key={evt.id} event={evt} />)}
-                           {alerts.length === 0 && <div className="py-20 text-center opacity-30"><ShieldCheck className="w-12 h-12 mx-auto mb-4" /><p className="text-xs font-black uppercase tracking-widest">Sin Riesgos Detectados</p></div>}
+                           <div className="flex gap-2 overflow-x-auto no-scrollbar px-2 pb-1">
+                              {CATEGORIES.map(cat => (
+                                 <button
+                                    key={cat}
+                                    onClick={() => setCategoryFilter(cat)}
+                                    className={`flex-shrink-0 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-colors border ${categoryFilter === cat ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-700'}`}
+                                 >
+                                    {cat}
+                                 </button>
+                              ))}
+                           </div>
+                           {visibleAlerts.map(evt => <AlertCard key={evt.id} event={evt} />)}
+                           {visibleAlerts.length === 0 && <div className="py-20 text-center opacity-30"><ShieldCheck className="w-12 h-12 mx-auto mb-4" /><p className="text-xs font-black uppercase tracking-widest">{categoryFilter === 'TODAS' ? 'Sin Riesgos Detectados' : `Sin eventos de ${categoryFilter}`}</p></div>}
                         </div>
                         {renderFooter("opacity-30")}
                     </>
