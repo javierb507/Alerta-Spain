@@ -21,6 +21,7 @@ export default function App() {
   const [location, setLocation] = useState<UserLocation>({ name: '', isGPS: false });
   const [alerts, setAlerts] = useState<AlertEvent[]>([]);
   const [analysis, setAnalysis] = useState<string>('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('TODAS');
   const [loading, setLoading] = useState(false);
   const [radius, setRadius] = useState<number>(5); 
   const [lastUpdate, setLastUpdate] = useState<string>('');
@@ -201,7 +202,7 @@ export default function App() {
         seenAlertIds.current.clear();
       }
 
-      const result = await fetchAlerts(locName, date, searchRadius || radius, 'TODAS', customSources);
+      const result = await fetchAlerts(locName, date, searchRadius || radius, categoryFilter, customSources);
 
       // Lógica de notificaciones para eventos nuevos
       if (!date) {
@@ -271,6 +272,12 @@ export default function App() {
     const dateStr = `${formYear}-${String(formMonth + 1).padStart(2, '0')}-${String(formDay).padStart(2, '0')}`;
     executeSearch(historyLocation, dateStr);
   };
+
+  // Filtro de categorías: filtra la lista en cliente y se pasa al prompt de búsqueda.
+  const CATEGORIES = ['TODAS', 'Incendio', 'Clima', 'Tráfico', 'Transporte', 'Seguridad'];
+  const visibleAlerts = categoryFilter === 'TODAS'
+    ? alerts
+    : alerts.filter(a => (a.category || '').toLowerCase().includes(categoryFilter.toLowerCase()));
 
   const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
   const years = Array.from({ length: 10 }, (_, i) => currentYear - i);
@@ -508,10 +515,21 @@ export default function App() {
                         <div className="space-y-4">
                            <div className="flex items-center justify-between px-2">
                               <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><Siren className="w-4 h-4" /> Alertas Operativas</h3>
-                              <span className="text-[10px] font-bold text-blue-600 bg-blue-500/10 px-3 py-1 rounded-full uppercase">{alerts.length} Eventos</span>
+                              <span className="text-[10px] font-bold text-blue-600 bg-blue-500/10 px-3 py-1 rounded-full uppercase">{visibleAlerts.length} Eventos</span>
                            </div>
-                           {alerts.map(evt => <AlertCard key={evt.id} event={evt} />)}
-                           {alerts.length === 0 && <div className="py-20 text-center opacity-30"><ShieldCheck className="w-12 h-12 mx-auto mb-4" /><p className="text-xs font-black uppercase tracking-widest">Sin Riesgos Detectados</p></div>}
+                           <div className="flex gap-2 overflow-x-auto no-scrollbar px-2 pb-1">
+                              {CATEGORIES.map(cat => (
+                                 <button
+                                    key={cat}
+                                    onClick={() => setCategoryFilter(cat)}
+                                    className={`flex-shrink-0 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-colors border ${categoryFilter === cat ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-700'}`}
+                                 >
+                                    {cat}
+                                 </button>
+                              ))}
+                           </div>
+                           {visibleAlerts.map(evt => <AlertCard key={evt.id} event={evt} />)}
+                           {visibleAlerts.length === 0 && <div className="py-20 text-center opacity-30"><ShieldCheck className="w-12 h-12 mx-auto mb-4" /><p className="text-xs font-black uppercase tracking-widest">{categoryFilter === 'TODAS' ? 'Sin Riesgos Detectados' : `Sin eventos de ${categoryFilter}`}</p></div>}
                         </div>
                         {renderFooter("opacity-30")}
                     </>
