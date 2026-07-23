@@ -174,7 +174,7 @@ const AlertCard: React.FC<Props> = ({ event }) => {
               {source.type === SourceType.OFFICIAL && (
                 <div className="flex items-center gap-1 px-1">
                   <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500" />
-                  <span className="text-[8px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">Verified Source</span>
+                  <span className="text-[8px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">Fuente verificada</span>
                 </div>
               )}
             </div>
