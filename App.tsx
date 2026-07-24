@@ -146,7 +146,7 @@ export default function App() {
     if (Notification.permission === 'granted' && isMonitoring) {
       new Notification(`🚨 MONITOR ESPAÑA: ${alert.title}`, {
         body: alert.description,
-        icon: '/logo.svg'
+        icon: `${import.meta.env.BASE_URL}logo.svg`
       });
     }
   };

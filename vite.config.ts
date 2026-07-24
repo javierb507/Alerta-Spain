@@ -7,6 +7,8 @@ import { VitePWA } from 'vite-plugin-pwa';
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
+      // Ruta base para GitHub Pages (javierb507.github.io/Alerta-Spain/)
+      base: mode === 'production' ? '/Alerta-Spain/' : '/',
       server: {
         port: 3000,
         host: '0.0.0.0',
