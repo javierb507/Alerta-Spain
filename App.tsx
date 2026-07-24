@@ -4,7 +4,7 @@ import {
   Navigation, Search, History, AlertOctagon, RotateCw, Loader2,
   Bell, BellOff, Sun, Moon, ShieldAlert, Radio, ShieldCheck, Siren,
   ArrowLeft, Clock, Activity, CloudSun, Car, Settings,
-  Trash2, Globe, X
+  Trash2, Globe, X, KeyRound, ClipboardCopy, ClipboardPaste
 } from 'lucide-react';
 import { AlertEvent, UserLocation, SeverityLevel, QuickStatus, CustomSource, SourceType } from './types';
 import { fetchAlerts } from './services/alertsService';
@@ -18,12 +18,13 @@ enum ViewState { ONBOARDING, DASHBOARD, HISTORY }
 
 export default function App() {
   const [view, setView] = useState<ViewState>(ViewState.ONBOARDING);
-  const [location, setLocation] = useState<UserLocation>({ name: '', isGPS: false });
+  // Preferencias persistidas por usuario (localStorage)
+  const [location, setLocation] = useState<UserLocation>(() => ({ name: localStorage.getItem('last_location') || '', isGPS: false }));
   const [alerts, setAlerts] = useState<AlertEvent[]>([]);
   const [analysis, setAnalysis] = useState<string>('');
-  const [categoryFilter, setCategoryFilter] = useState<string>('TODAS');
+  const [categoryFilter, setCategoryFilter] = useState<string>(() => localStorage.getItem('category_filter') || 'TODAS');
   const [loading, setLoading] = useState(false);
-  const [radius, setRadius] = useState<number>(5); 
+  const [radius, setRadius] = useState<number>(() => Number(localStorage.getItem('radius')) || 5);
   const [lastUpdate, setLastUpdate] = useState<string>('');
   const [quickStatus, setQuickStatus] = useState<QuickStatus | null>(null);
   const [isQuickLoading, setIsQuickLoading] = useState(false);
@@ -57,6 +58,35 @@ export default function App() {
     const preset = getPreset(id);
     updateAIConfig({ llmPreset: id, llmBaseUrl: preset.baseUrl, llmModel: preset.defaultModel });
   };
+  // Sin ninguna clave configurada la app no puede buscar alertas: se guía al usuario a Ajustes
+  const needsSetup = !aiConfig.llmApiKey && !aiConfig.geminiApiKey && !aiConfig.tavilyApiKey;
+
+  // Exportar/importar configuración entre dispositivos (evita teclear claves en el móvil)
+  const exportConfig = async () => {
+    const payload = JSON.stringify({ ai_config: aiConfig, custom_sources: customSources });
+    try {
+      await navigator.clipboard.writeText(payload);
+      AudioService.playSuccess();
+      alert("Configuración copiada al portapapeles. Pégala en Ajustes → Importar en tu otro dispositivo.");
+    } catch {
+      prompt("Copia este texto manualmente:", payload);
+    }
+  };
+
+  const importConfig = () => {
+    const raw = prompt("Pega aquí la configuración exportada:");
+    if (!raw) return;
+    try {
+      const data = JSON.parse(raw);
+      if (data.ai_config) updateAIConfig(data.ai_config);
+      if (Array.isArray(data.custom_sources)) setCustomSources(data.custom_sources);
+      AudioService.playSuccess();
+      alert("Configuración importada correctamente.");
+    } catch {
+      AudioService.playError();
+      alert("Formato inválido. Usa el texto generado por Exportar.");
+    }
+  };
 
   // Formulario de Historia
   const [formDay, setFormDay] = useState(new Date().getDate());
@@ -89,6 +119,14 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('is_monitoring', isMonitoring.toString());
   }, [isMonitoring]);
+
+  useEffect(() => {
+    localStorage.setItem('radius', String(radius));
+  }, [radius]);
+
+  useEffect(() => {
+    localStorage.setItem('category_filter', categoryFilter);
+  }, [categoryFilter]);
 
   useEffect(() => {
     const initQuickStatus = async () => {
@@ -216,6 +254,7 @@ export default function App() {
       setLastUpdate(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
       
       setLocation({ name: locName, isGPS: false });
+      localStorage.setItem('last_location', locName);
       setHistoryDate(date || '');
       
       AudioService.playSuccess();
@@ -330,6 +369,12 @@ export default function App() {
                     <input type="text" placeholder="Modelo" value={aiConfig.llmModel} onChange={(e) => updateAIConfig({ llmModel: e.target.value })} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold outline-none" />
                     <input type="password" placeholder="Clave de API del proveedor" value={aiConfig.llmApiKey} onChange={(e) => updateAIConfig({ llmApiKey: e.target.value })} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold outline-none" />
                     <p className="text-[9px] text-slate-400 font-bold leading-snug">Las claves se guardan solo en este dispositivo (localStorage), nunca en el servidor.</p>
+                    <p className="text-[9px] text-slate-400 font-bold leading-snug">
+                        Claves gratis:{' '}
+                        <a href="https://console.groq.com/keys" target="_blank" rel="noreferrer" className="text-blue-500 underline">Groq</a>{' · '}
+                        <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" className="text-blue-500 underline">Gemini</a>{' · '}
+                        <a href="https://app.tavily.com" target="_blank" rel="noreferrer" className="text-blue-500 underline">Tavily</a>
+                    </p>
                 </div>
 
                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Búsqueda Web</p>
@@ -344,6 +389,16 @@ export default function App() {
                     <input type="text" placeholder="Nombre (ej: Prot. Civil Valencia)" value={newSourceName} onChange={(e) => setNewSourceName(e.target.value)} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold outline-none" />
                     <input type="text" placeholder="Web o RRSS" value={newSourceUrl} onChange={(e) => setNewSourceUrl(e.target.value)} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold outline-none" />
                     <button onClick={addCustomSource} className="w-full bg-blue-600 text-white py-2 rounded-xl text-xs font-black uppercase tracking-widest">Añadir Fuente</button>
+                </div>
+
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Copiar Configuración a Otro Dispositivo</p>
+                <div className="grid grid-cols-2 gap-3">
+                    <button onClick={exportConfig} className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-black uppercase text-slate-600 dark:text-slate-300">
+                        <ClipboardCopy className="w-3.5 h-3.5" /> Exportar
+                    </button>
+                    <button onClick={importConfig} className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-black uppercase text-slate-600 dark:text-slate-300">
+                        <ClipboardPaste className="w-3.5 h-3.5" /> Importar
+                    </button>
                 </div>
             </div>
             <div className="space-y-3">
@@ -381,6 +436,16 @@ export default function App() {
                     <p className="text-slate-400 font-bold uppercase tracking-[0.2em] text-[7px]">Inteligencia IA Local</p>
                  </div>
             </div>
+
+            {needsSetup && (
+              <button onClick={() => setShowSettings(true)} className="w-full p-4 rounded-2xl border border-amber-300 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 flex items-center gap-3 text-left">
+                <div className="p-2 bg-amber-500 text-white rounded-lg flex-shrink-0"><KeyRound className="w-4 h-4" /></div>
+                <div className="flex-1">
+                  <div className="text-[10px] font-black uppercase text-amber-700 dark:text-amber-400">Configura tu proveedor de IA</div>
+                  <div className="text-[9px] text-amber-600/80 dark:text-amber-500/80 font-bold">Necesitas una clave de API (hay opciones gratis) para buscar alertas. Toca aquí.</div>
+                </div>
+              </button>
+            )}
 
             <div className="bg-white/95 dark:bg-slate-900/90 backdrop-blur-2xl rounded-[2rem] border border-slate-200 dark:border-slate-800 p-6 shadow-2xl space-y-5">
                 <div className="flex items-center justify-between border-b dark:border-slate-800 pb-3">
