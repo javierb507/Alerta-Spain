@@ -4,11 +4,13 @@ import {
   Navigation, Search, History, AlertOctagon, RotateCw, Loader2,
   Bell, BellOff, Sun, Moon, ShieldAlert, Radio, ShieldCheck, Siren,
   ArrowLeft, Clock, Activity, CloudSun, Car, Settings,
-  Trash2, Globe, X, KeyRound, ClipboardCopy, ClipboardPaste
+  Trash2, Globe, X, KeyRound, ClipboardCopy, ClipboardPaste,
+  WifiOff, CheckCircle2, XCircle
 } from 'lucide-react';
 import { AlertEvent, UserLocation, SeverityLevel, QuickStatus, CustomSource, SourceType } from './types';
 import { fetchAlerts } from './services/alertsService';
 import { AIConfig, LLM_PRESETS, loadConfig, saveConfig, getPreset } from './services/config';
+import { testConnections, TestResult } from './services/connectionTest';
 import { fetchQuickStatus } from './services/weatherService';
 import { AudioService } from './services/audioService';
 import AlertCard from './components/AlertCard';
@@ -28,6 +30,12 @@ export default function App() {
   const [lastUpdate, setLastUpdate] = useState<string>('');
   const [quickStatus, setQuickStatus] = useState<QuickStatus | null>(null);
   const [isQuickLoading, setIsQuickLoading] = useState(false);
+  // Timestamp de datos cacheados cuando se muestra la última búsqueda sin conexión
+  const [cachedAt, setCachedAt] = useState<number | null>(null);
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
+    const saved = localStorage.getItem('recent_searches');
+    return saved ? JSON.parse(saved) : [];
+  });
   
   // Persistencia de monitorización y alertas vistas
   const [isMonitoring, setIsMonitoring] = useState(() => {
@@ -60,6 +68,19 @@ export default function App() {
   };
   // Sin ninguna clave configurada la app no puede buscar alertas: se guía al usuario a Ajustes
   const needsSetup = !aiConfig.llmApiKey && !aiConfig.geminiApiKey && !aiConfig.tavilyApiKey;
+
+  // Prueba de conexión de las claves configuradas
+  const [testResults, setTestResults] = useState<TestResult[] | null>(null);
+  const [testing, setTesting] = useState(false);
+  const runConnectionTest = async () => {
+    setTesting(true);
+    setTestResults(null);
+    const results = await testConnections(aiConfig);
+    setTestResults(results);
+    setTesting(false);
+    if (results.some(r => r.ok)) AudioService.playSuccess();
+    else AudioService.playError();
+  };
 
   // Exportar/importar configuración entre dispositivos (evita teclear claves en el móvil)
   const exportConfig = async () => {
@@ -127,6 +148,24 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('category_filter', categoryFilter);
   }, [categoryFilter]);
+
+  // Sin conexión al arrancar: mostrar la última búsqueda cacheada
+  useEffect(() => {
+    if (!navigator.onLine) {
+      const saved = localStorage.getItem('last_search');
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          setAlerts(data.alerts || []);
+          setAnalysis(data.analysis || '');
+          setLocation({ name: data.location || '', isGPS: false });
+          setHistoryDate(data.historyDate || '');
+          setCachedAt(data.timestamp);
+          setView(ViewState.DASHBOARD);
+        } catch { /* caché corrupta: ignorar */ }
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const initQuickStatus = async () => {
@@ -256,6 +295,20 @@ export default function App() {
       setLocation({ name: locName, isGPS: false });
       localStorage.setItem('last_location', locName);
       setHistoryDate(date || '');
+      setCachedAt(null);
+
+      // Caché para modo offline y lista de búsquedas recientes
+      localStorage.setItem('last_search', JSON.stringify({
+        alerts: result.events, analysis: result.analysis,
+        location: locName, historyDate: date || '', timestamp: Date.now()
+      }));
+      if (!date) {
+        setRecentSearches(prev => {
+          const next = [locName, ...prev.filter(s => s !== locName)].slice(0, 5);
+          localStorage.setItem('recent_searches', JSON.stringify(next));
+          return next;
+        });
+      }
       
       AudioService.playSuccess();
       setView(ViewState.DASHBOARD);
@@ -384,6 +437,21 @@ export default function App() {
                     <p className="text-[9px] text-slate-400 font-bold leading-snug">Se usa Gemini si tiene clave; si falla o no hay, Tavily (gratis en tavily.com).</p>
                 </div>
 
+                <button onClick={runConnectionTest} disabled={testing} className="w-full py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2">
+                    {testing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Activity className="w-3.5 h-3.5" />}
+                    {testing ? 'Probando...' : 'Probar Conexión'}
+                </button>
+                {testResults && (
+                    <div className="space-y-2">
+                        {testResults.map(r => (
+                            <div key={r.name} className={`flex items-start gap-2 p-3 rounded-xl border text-[10px] font-bold ${r.ok ? 'border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400'}`}>
+                                {r.ok ? <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" /> : <XCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />}
+                                <div><span className="uppercase">{r.name}</span>: {r.detail}</div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Fuentes Locales de Información</p>
                 <div className="space-y-3 bg-slate-50 dark:bg-slate-950/50 p-4 rounded-3xl border border-slate-100 dark:border-slate-800">
                     <input type="text" placeholder="Nombre (ej: Prot. Civil Valencia)" value={newSourceName} onChange={(e) => setNewSourceName(e.target.value)} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold outline-none" />
@@ -486,6 +554,15 @@ export default function App() {
                     <input type="text" placeholder="Localidad..." value={location.name} onChange={(e) => setLocation({ ...location, name: e.target.value })} className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-3.5 text-xs font-bold" />
                     <button type="submit" className="bg-blue-600 text-white p-4 rounded-2xl"><Search className="w-4 h-4" /></button>
                 </form>
+                {recentSearches.length > 0 && (
+                  <div className="flex gap-2 flex-wrap">
+                    {recentSearches.map(name => (
+                      <button key={name} onClick={() => executeSearch(name)} disabled={loading} className="px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                        {name}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               <button onClick={() => setView(ViewState.HISTORY)} className="w-full text-[9px] font-black text-slate-400 flex items-center justify-center gap-2 uppercase tracking-widest"><History className="w-3.5 h-3.5" /> Archivo Histórico</button>
             </div>
@@ -566,6 +643,14 @@ export default function App() {
                     </div>
                 ) : (
                     <>
+                        {cachedAt && (
+                            <div className="p-4 rounded-2xl border border-amber-300 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 flex items-center gap-3">
+                                <WifiOff className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                                <p className="text-[10px] font-black uppercase text-amber-700 dark:text-amber-400">
+                                    Sin conexión — mostrando datos de las {new Date(cachedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                            </div>
+                        )}
                         <StatsChart events={alerts} />
                         {historyDate && (
                             <div className="bg-purple-600 p-6 rounded-[2rem] text-white flex items-center justify-between">
