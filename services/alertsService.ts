@@ -43,11 +43,12 @@ REGLAS:
 2. Clasifica correctamente como 'Transporte', 'Clima', 'Tráfico', 'Incendio', etc.
 3. Asocia sourceIndex de la lista de fuentes.
 4. severity debe ser uno de: CRITICAL, WARNING, INFO, SAFE.
+5. lat/lng: coordenadas aproximadas del lugar del evento en España (número decimal). Si no puedes estimarlas, usa null.
 
 Responde SOLO con un objeto JSON con esta estructura exacta, sin texto adicional:
 {
   "events": [
-    { "title": "...", "description": "...", "severity": "CRITICAL|WARNING|INFO|SAFE", "category": "...", "sourceName": "...", "sourceIndex": 0, "timeInfo": "..." }
+    { "title": "...", "description": "...", "severity": "CRITICAL|WARNING|INFO|SAFE", "category": "...", "sourceName": "...", "sourceIndex": 0, "timeInfo": "...", "lat": 40.42, "lng": -3.70 }
   ],
   "riskAnalysis": "análisis de riesgo en 2-4 frases"
 }`;
@@ -74,6 +75,10 @@ Responde SOLO con un objeto JSON con esta estructura exacta, sin texto adicional
       const officialKeywords = ['gob.es', 'aemet.es', 'dgt.es', 'renfe.com', 'adif.es', 'metro', 'emt', ...customKeywords];
       const isOfficial = officialKeywords.some(kw => finalUrl.toLowerCase().includes(kw) || sourceTitle.includes(kw)) || (evt.sourceName || '').toLowerCase().includes('112') || (evt.sourceName || '').toLowerCase().includes('oficial');
 
+      // Coordenadas solo si son números plausibles dentro de España (incl. Canarias)
+      const lat = typeof evt.lat === 'number' && evt.lat >= 27 && evt.lat <= 44.5 ? evt.lat : undefined;
+      const lng = typeof evt.lng === 'number' && evt.lng >= -18.5 && evt.lng <= 5 ? evt.lng : undefined;
+
       return {
         id: `evt-${Math.abs(hash)}`,
         title: evt.title,
@@ -83,6 +88,8 @@ Responde SOLO con un objeto JSON con esta estructura exacta, sin texto adicional
         severity: evt.severity as SeverityLevel,
         category: evt.category,
         isHistorical: isHistorical,
+        lat,
+        lng,
         sources: [{
           name: evt.sourceName || (sourceFromList ? sourceFromList.title : "Fuente de información"),
           type: isOfficial ? SourceType.OFFICIAL : SourceType.NEWS,

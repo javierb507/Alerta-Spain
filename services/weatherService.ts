@@ -54,6 +54,21 @@ export const fetchQuickStatus = async (coords?: { lat: number, lng: number }): P
   }
 };
 
+/**
+ * Geocodifica un nombre de localidad a coordenadas (Open-Meteo, gratis, con CORS).
+ * Devuelve null si no hay resultado.
+ */
+export const geocodeLocation = async (name: string): Promise<{ lat: number, lng: number } | null> => {
+  try {
+    const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=es&countryCode=ES`);
+    const data = await res.json();
+    const hit = data.results?.[0];
+    return hit ? { lat: hit.latitude, lng: hit.longitude } : null;
+  } catch {
+    return null;
+  }
+};
+
 const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
   try {
     const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=es`);
