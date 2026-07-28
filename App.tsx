@@ -121,8 +121,11 @@ export default function App() {
 
   const currentYear = new Date().getFullYear();
   const authorName = "Javier Ballesteros";
-  const APP_VERSION = "2.1";
-  const DEPLOYMENT_DATE = "28/07/2026";
+  // Inyectados por Vite en build (vite.config.ts → define)
+  const APP_VERSION = __APP_VERSION__;
+  const DEPLOYMENT_DATE = new Date(__BUILD_DATE__).toLocaleString('es-ES', {
+    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+  });
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('theme');
