@@ -118,8 +118,8 @@ export default function App() {
 
   const currentYear = new Date().getFullYear();
   const authorName = "Javier Ballesteros";
-  const APP_VERSION = "2.0";
-  const DEPLOYMENT_DATE = "11/05/2026 13:20 CEST"; // Actualizado a v2.0
+  const APP_VERSION = "2.1";
+  const DEPLOYMENT_DATE = "28/07/2026";
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('theme');
