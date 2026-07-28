@@ -1,7 +1,7 @@
 
-# 🚨 Monitor de Emergencias España v2.0 (Masterpiece Version)
+# 🚨 Monitor de Emergencias España v2.1
 
-**Última actualización:** 11 de Mayo, 2026 - 13:20 CEST
+**Última actualización:** 28 de Julio, 2026
 
 Sistema avanzado de inteligencia situacional diseñado para la monitorización de emergencias y sucesos en el territorio español. Impulsado por la arquitectura multimodal de **Google Gemini 3**.
 
@@ -13,20 +13,31 @@ Me di cuenta de que, aunque existen muchas herramientas de respuesta a emergenci
 **Monitor de Emergencias** nace para solucionar eso: permitir que cualquier persona pueda buscar en un radio de kilómetros determinado si hay algún incidente reportado, unificando en un solo lugar alertas de fuentes locales, redes sociales, el 112, Protección Civil y la DGT.
 
 ## 🚀 Despliegue en Producción
-La aplicación se encuentra activa en:
-[https://alerta-local-espa-a-249485768002.us-west1.run.app/](https://alerta-local-espa-a-249485768002.us-west1.run.app/)
+La aplicación está publicada en GitHub Pages:
+**[https://javierb507.github.io/Alerta-Spain/](https://javierb507.github.io/Alerta-Spain/)**
+
+Desde el móvil: abre la URL → menú del navegador → **"Añadir a pantalla de inicio"** para instalarla como app (PWA). Cada push a `main` despliega automáticamente vía GitHub Actions.
+
+## 🔑 Claves de API (trae la tuya)
+La app se publica **sin ninguna clave incrustada**: cada usuario configura la suya en **Ajustes** (se guarda solo en su dispositivo, en localStorage). Opciones gratuitas:
+- **LLM**: [Groq](https://console.groq.com/keys), [Google AI Studio (Gemini)](https://aistudio.google.com/apikey), OpenRouter, Cerebras
+- **Búsqueda web**: [Tavily](https://app.tavily.com) (≈1.000 búsquedas/mes gratis) o Gemini con Google Search grounding (requiere facturación activa)
+
+En Ajustes tienes **Probar Conexión** (valida las claves al momento) y **Exportar/Importar** (copia la configuración de un dispositivo a otro sin reteclear).
 
 ## 🧠 Cómo funciona: El Motor de Inteligencia
 
 Este sistema no utiliza una base de datos estática; en su lugar, emplea una **Arquitectura de IA en Dos Fases** para garantizar que la información sea real y esté actualizada al minuto:
 
-### Fase 1: Percepción y Grounding (Google Search)
-El sistema utiliza el modelo **Gemini 3 Flash** con la herramienta de búsqueda de Google. Este modelo escanea activamente la web buscando:
+### Fase 1: Búsqueda Web
+Proveedores intercambiables: **Gemini con Google Search grounding** (si hay clave con facturación) o **Tavily** como alternativa gratuita. Se escanea la web buscando:
 - **Fuentes Oficiales**: AEMET (Meteo), DGT (Tráfico), Renfe/ADIF (Transporte), y servicios de emergencia 112.
 - **Señales Sociales**: Reportes ciudadanos y noticias de última hora en prensa local y nacional.
 
-### Fase 2: Análisis Crítico y Estructuración (JSON Schema)
-Una vez recolectada la información bruta, el modelo **Gemini 3 Pro** realiza un análisis forense de los datos para:
+El clima del panel principal no usa IA: viene directo de **Open-Meteo** (gratis, sin clave).
+
+### Fase 2: Análisis Crítico y Estructuración (JSON)
+Una vez recolectada la información bruta, **cualquier LLM OpenAI-compatible** (Gemini, Groq, OpenRouter, Cerebras, MiniMax, o un endpoint propio) realiza un análisis de los datos para:
 1.  **Deduplicar**: Eliminar reportes redundantes de la misma emergencia.
 2.  **Clasificar Severidad**: Asignar niveles (CRITICAL, WARNING, INFO) basados en el riesgo real para la vida y la propiedad.
 3.  **Mapeo de Fuentes**: Vincular cada alerta con su URL de origen verificada para evitar alucinaciones de la IA.
@@ -43,11 +54,11 @@ Una vez recolectada la información bruta, el modelo **Gemini 3 Pro** realiza un
 
 ## 📦 Instalación y Configuración Local
 
-1.  **Requisitos**: [Node.js](https://nodejs.org/) (v18+).
-2.  **Clonar**: `git clone https://github.com/javierb507/Alerta-espa-a.git`
+1.  **Requisitos**: [Node.js](https://nodejs.org/) (v20+).
+2.  **Clonar**: `git clone https://github.com/javierb507/Alerta-Spain.git`
 3.  **Dependencias**: `npm install`
-4.  **Clave de API**: Crea un archivo `.env` con `GEMINI_API_KEY=tu_clave`.
-5.  **Ejecutar**: `npm run dev`
+4.  **Ejecutar**: `npm run dev`
+5.  **Claves**: configúralas en Ajustes dentro de la app, o crea un `.env` con `GEMINI_API_KEY=tu_clave` como valor por defecto para desarrollo.
 
 ## ⚖️ Licencia
 Este proyecto está bajo la licencia **GPLv3**. Consulte el archivo `LICENSE` para más detalles.
@@ -60,9 +71,9 @@ Este proyecto está bajo la licencia **GPLv3**. Consulte el archivo `LICENSE` pa
 
 ---
 
-# 🚨 Spain Emergency Monitor v2.0 (Masterpiece Version)
+# 🚨 Spain Emergency Monitor v2.1
 
-**Last Update:** May 11, 2026 - 13:20 CEST
+**Last Update:** July 28, 2026
 
 Advanced situational intelligence system designed for monitoring emergencies and incidents within the Spanish territory. Powered by **Google Gemini 3** multimodal architecture.
 
@@ -74,20 +85,31 @@ I realized that, although many emergency response tools exist, the information i
 **Emergency Monitor** was born to solve that: allowing anyone to search within a specific radius if there are any reported incidents, unifying in one place alerts from local sources, social media, 112, Civil Protection, and DGT.
 
 ## 🚀 Production Deployment
-The application is live at:
-[https://alerta-local-espa-a-249485768002.us-west1.run.app/](https://alerta-local-espa-a-249485768002.us-west1.run.app/)
+The application is published on GitHub Pages:
+**[https://javierb507.github.io/Alerta-Spain/](https://javierb507.github.io/Alerta-Spain/)**
+
+On mobile: open the URL → browser menu → **"Add to Home Screen"** to install it as an app (PWA). Every push to `main` deploys automatically via GitHub Actions.
+
+## 🔑 API Keys (bring your own)
+The app ships with **no embedded keys**: each user configures their own in **Settings** (stored only on their device, in localStorage). Free options:
+- **LLM**: [Groq](https://console.groq.com/keys), [Google AI Studio (Gemini)](https://aistudio.google.com/apikey), OpenRouter, Cerebras
+- **Web search**: [Tavily](https://app.tavily.com) (~1,000 free searches/month) or Gemini with Google Search grounding (requires active billing)
+
+Settings includes **Test Connection** (validates keys instantly) and **Export/Import** (copy your config across devices without retyping).
 
 ## 🧠 How it works: The Intelligence Engine
 
 This system doesn't use a static database; instead, it employs a **Two-Phase AI Architecture** to ensure information is real and up-to-the-minute:
 
-### Phase 1: Perception and Grounding (Google Search)
-The system uses the **Gemini 3 Flash** model with Google Search Tool. This model actively scans the web looking for:
+### Phase 1: Web Search
+Swappable providers: **Gemini with Google Search grounding** (if a billing-enabled key is set) or **Tavily** as the free alternative. The web is scanned for:
 - **Official Sources**: AEMET (Weather), DGT (Traffic), Renfe/ADIF (Transport), and 112 emergency services.
 - **Social Signals**: Citizen reports and breaking news in local and national press.
 
-### Phase 2: Critical Analysis and Structuring (JSON Schema)
-Once raw information is gathered, the **Gemini 3 Pro** model performs a forensic analysis of the data to:
+The weather panel does not use AI: it comes straight from **Open-Meteo** (free, keyless).
+
+### Phase 2: Critical Analysis and Structuring (JSON)
+Once raw information is gathered, **any OpenAI-compatible LLM** (Gemini, Groq, OpenRouter, Cerebras, MiniMax, or a custom endpoint) analyzes the data to:
 1.  **De-duplicate**: Remove redundant reports of the same emergency.
 2.  **Classify Severity**: Assign levels (CRITICAL, WARNING, INFO) based on real risk to life and property.
 3.  **Source Mapping**: Link each alert with its verified source URL to avoid AI hallucinations.
@@ -104,11 +126,11 @@ Once raw information is gathered, the **Gemini 3 Pro** model performs a forensic
 
 ## 📦 Local Installation and Configuration
 
-1.  **Requirements**: [Node.js](https://nodejs.org/) (v18+).
-2.  **Clone**: `git clone https://github.com/javierb507/Alerta-espa-a.git`
+1.  **Requirements**: [Node.js](https://nodejs.org/) (v20+).
+2.  **Clone**: `git clone https://github.com/javierb507/Alerta-Spain.git`
 3.  **Dependencies**: `npm install`
-4.  **API Key**: Create a `.env` file with `GEMINI_API_KEY=your_key`.
-5.  **Run**: `npm run dev`
+4.  **Run**: `npm run dev`
+5.  **Keys**: configure them in Settings inside the app, or create a `.env` with `GEMINI_API_KEY=your_key` as a development default.
 
 ## ⚖️ License
 This project is licensed under **GPLv3**. See the `LICENSE` file for more details.
