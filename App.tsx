@@ -11,10 +11,11 @@ import { AlertEvent, UserLocation, SeverityLevel, QuickStatus, CustomSource, Sou
 import { fetchAlerts } from './services/alertsService';
 import { AIConfig, LLM_PRESETS, loadConfig, saveConfig, getPreset } from './services/config';
 import { testConnections, TestResult } from './services/connectionTest';
-import { fetchQuickStatus } from './services/weatherService';
+import { fetchQuickStatus, geocodeLocation } from './services/weatherService';
 import { AudioService } from './services/audioService';
 import AlertCard from './components/AlertCard';
 import StatsChart from './components/StatsChart';
+import MapView from './components/MapView';
 
 enum ViewState { ONBOARDING, DASHBOARD, HISTORY }
 
@@ -32,6 +33,8 @@ export default function App() {
   const [isQuickLoading, setIsQuickLoading] = useState(false);
   // Timestamp de datos cacheados cuando se muestra la última búsqueda sin conexión
   const [cachedAt, setCachedAt] = useState<number | null>(null);
+  // Centro del mapa: coords de la ubicación buscada
+  const [mapCenter, setMapCenter] = useState<{ lat: number, lng: number } | null>(null);
   const [recentSearches, setRecentSearches] = useState<string[]>(() => {
     const saved = localStorage.getItem('recent_searches');
     return saved ? JSON.parse(saved) : [];
@@ -296,6 +299,14 @@ export default function App() {
       localStorage.setItem('last_location', locName);
       setHistoryDate(date || '');
       setCachedAt(null);
+
+      // Centro del mapa: coords embebidas en búsquedas GPS ("Cerca de lat, lng") o geocoding
+      const coordMatch = locName.match(/(-?\d+\.\d+),\s*(-?\d+\.\d+)/);
+      if (coordMatch) {
+        setMapCenter({ lat: Number(coordMatch[1]), lng: Number(coordMatch[2]) });
+      } else {
+        geocodeLocation(locName).then(setMapCenter);
+      }
 
       // Caché para modo offline y lista de búsquedas recientes
       localStorage.setItem('last_search', JSON.stringify({
@@ -652,6 +663,7 @@ export default function App() {
                             </div>
                         )}
                         <StatsChart events={alerts} />
+                        {mapCenter && <MapView alerts={visibleAlerts} center={mapCenter} radiusKm={radius} />}
                         {historyDate && (
                             <div className="bg-purple-600 p-6 rounded-[2rem] text-white flex items-center justify-between">
                                 <div className="flex items-center gap-4"><Clock className="w-6 h-6" /><div><div className="text-[9px] font-black uppercase tracking-widest opacity-60">Registro Histórico</div><div className="text-lg font-black">{historyDate}</div></div></div>

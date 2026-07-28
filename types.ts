@@ -35,6 +35,9 @@ export enum SourceType {
     category: string; // Fire, Weather, Protest, Traffic, Security
     sources: AlertSource[];
     isHistorical?: boolean;
+    // Coordenadas aproximadas del evento (estimadas por el LLM) para el mapa
+    lat?: number;
+    lng?: number;
   }
   
   export interface UserLocation {
