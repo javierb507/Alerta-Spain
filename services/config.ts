@@ -46,8 +46,8 @@ export interface AIConfig {
   tavilyApiKey: string;   // para búsqueda alternativa
 }
 
-/** URL del proxy compartido; vacío mientras no exista el Worker. */
-export const SHARED_PROXY_URL = '';
+/** URL del proxy compartido; vacío desactiva el modo servidor compartido. */
+export const SHARED_PROXY_URL: string = 'https://alerta-spain-proxy.alerta-spain.workers.dev';
 export const sharedModeAvailable = (): boolean => SHARED_PROXY_URL !== '';
 
 const STORAGE_KEY = 'ai_config';
@@ -59,7 +59,9 @@ const envGeminiKey = (typeof process !== 'undefined' && process.env?.API_KEY) ||
 const defaultPreset = getPreset(envGeminiKey ? 'gemini' : LLM_PRESETS[0].id);
 
 const DEFAULTS: AIConfig = {
-  apiMode: 'own',
+  // Con proxy disponible, un usuario nuevo arranca en modo compartido (cero configuración).
+  // En desarrollo con clave propia se respeta 'own' para no gastar la cuota compartida.
+  apiMode: (SHARED_PROXY_URL && !envGeminiKey) ? 'shared' : 'own',
   llmPreset: defaultPreset.id,
   llmBaseUrl: defaultPreset.baseUrl,
   llmModel: defaultPreset.defaultModel,

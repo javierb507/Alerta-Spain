@@ -3,7 +3,7 @@
 // Proveedor 1: Gemini con Google Search grounding (requiere clave Gemini con facturación).
 // Proveedor 2: Tavily (free tier, URLs reales directas).
 import { GoogleGenAI } from "@google/genai";
-import { AIConfig } from "./config";
+import { AIConfig, SHARED_PROXY_URL } from "./config";
 
 export interface SearchSource {
   id: number;
@@ -14,8 +14,23 @@ export interface SearchSource {
 export interface SearchResult {
   rawInfo: string;
   sources: SearchSource[];
-  provider: 'gemini' | 'tavily';
+  provider: 'gemini' | 'tavily' | 'shared';
 }
+
+// Modo servidor compartido: la búsqueda la hace el proxy con su clave (config.ts, issue #16).
+const searchViaProxy = async (query: string): Promise<SearchResult> => {
+  const res = await fetch(`${SHARED_PROXY_URL}/api/search`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `proxy search ${res.status}`);
+  }
+  const data = await res.json();
+  return { rawInfo: data.rawInfo || '', sources: data.sources || [], provider: 'shared' };
+};
 
 const isQuotaOrMissingModel = (e: unknown) =>
   e instanceof Error && (
@@ -91,6 +106,10 @@ const searchWithTavily = async (query: string, apiKey: string): Promise<SearchRe
  */
 export const searchIncidents = async (query: string, config: AIConfig): Promise<SearchResult> => {
   const errors: string[] = [];
+
+  if (config.apiMode === 'shared' && SHARED_PROXY_URL) {
+    return searchViaProxy(query);
+  }
 
   if (config.geminiApiKey) {
     try {
