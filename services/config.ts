@@ -46,8 +46,8 @@ export interface AIConfig {
   tavilyApiKey: string;   // para búsqueda alternativa
 }
 
-/** URL del proxy compartido; vacío mientras no exista el Worker. */
-export const SHARED_PROXY_URL = '';
+/** URL del proxy compartido; vacío desactiva el modo servidor compartido. */
+export const SHARED_PROXY_URL: string = 'https://alerta-spain-proxy.alerta-spain.workers.dev';
 export const sharedModeAvailable = (): boolean => SHARED_PROXY_URL !== '';
 
 const STORAGE_KEY = 'ai_config';
