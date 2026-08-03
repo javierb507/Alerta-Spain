@@ -11,10 +11,17 @@ export interface SearchSource {
   uri: string;
 }
 
+export interface SharedQuota {
+  used: number;
+  limit: number;
+  remaining: number;
+}
+
 export interface SearchResult {
   rawInfo: string;
   sources: SearchSource[];
   provider: 'gemini' | 'tavily' | 'shared';
+  quota?: SharedQuota; // solo en modo compartido con límite por IP activo
 }
 
 // Modo servidor compartido: la búsqueda la hace el proxy con su clave (config.ts, issue #16).
@@ -24,12 +31,15 @@ const searchViaProxy = async (query: string): Promise<SearchResult> => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ query }),
   });
+  const data = await res.json().catch(() => ({} as any));
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || `proxy search ${res.status}`);
+    // Límite diario del servidor compartido alcanzado: mensaje claro que invita a usar clave propia.
+    if (res.status === 429 || data.error === 'LIMIT_REACHED') {
+      throw new Error('SHARED_LIMIT_REACHED');
+    }
+    throw new Error(data.error || `proxy search ${res.status}`);
   }
-  const data = await res.json();
-  return { rawInfo: data.rawInfo || '', sources: data.sources || [], provider: 'shared' };
+  return { rawInfo: data.rawInfo || '', sources: data.sources || [], provider: 'shared', quota: data.quota };
 };
 
 const isQuotaOrMissingModel = (e: unknown) =>

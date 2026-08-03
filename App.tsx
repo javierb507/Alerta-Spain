@@ -5,7 +5,7 @@ import {
   Bell, BellOff, Sun, Moon, ShieldAlert, Radio, ShieldCheck, Siren,
   ArrowLeft, Clock, Activity, CloudSun, Car, Settings,
   Trash2, Globe, X, KeyRound, ClipboardCopy, ClipboardPaste,
-  WifiOff, CheckCircle2, XCircle, Share2, Volume2, VolumeX, Star
+  WifiOff, CheckCircle2, XCircle, Share2, Volume2, VolumeX, Star, Gift
 } from 'lucide-react';
 import { AlertEvent, UserLocation, SeverityLevel, QuickStatus, CustomSource, SourceType, SavedLocation } from './types';
 import { fetchAlerts } from './services/alertsService';
@@ -106,6 +106,9 @@ export default function App() {
   // En modo servidor compartido el usuario no configura claves: el proxy las tiene.
   const needsSetup = aiConfig.apiMode !== 'shared' &&
     !aiConfig.llmApiKey && !aiConfig.geminiApiKey && !aiConfig.tavilyApiKey;
+  const usingSharedTier = aiConfig.apiMode === 'shared';
+  // Cuota restante del servidor gratuito compartido (la reporta el proxy)
+  const [sharedQuota, setSharedQuota] = useState<{ used: number; limit: number; remaining: number } | null>(null);
 
   // Prueba de conexión de las claves configuradas
   const [testResults, setTestResults] = useState<TestResult[] | null>(null);
@@ -336,6 +339,8 @@ export default function App() {
 
       setAlerts(result.events);
       setAnalysis(result.analysis);
+      if (result.quota) setSharedQuota(result.quota);
+      if (result.limitReached) setSharedQuota({ used: 0, limit: 0, remaining: 0 });
       setLastUpdate(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
       
       setLocation({ name: locName, isGPS: false });
@@ -821,6 +826,18 @@ export default function App() {
                     </div>
                 ) : (
                     <>
+                        {usingSharedTier && (
+                            <button onClick={() => setShowSettings(true)} className="w-full p-3 rounded-2xl border border-blue-200 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-500/10 flex items-center gap-3 text-left">
+                                <Gift className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-[10px] font-black uppercase text-blue-700 dark:text-blue-400 leading-tight">
+                                        Servidor gratuito compartido
+                                        {sharedQuota && sharedQuota.limit > 0 && ` · te quedan ${sharedQuota.remaining} de ${sharedQuota.limit} hoy`}
+                                    </p>
+                                    <p className="text-[9px] font-bold text-blue-600/70 dark:text-blue-400/70 leading-tight">Toca para usar tu propia clave sin límites</p>
+                                </div>
+                            </button>
+                        )}
                         {cachedAt && (
                             <div className="p-4 rounded-2xl border border-amber-300 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 flex items-center gap-3">
                                 {navigator.onLine ? <Clock className="w-4 h-4 text-amber-600 flex-shrink-0" /> : <WifiOff className="w-4 h-4 text-amber-600 flex-shrink-0" />}

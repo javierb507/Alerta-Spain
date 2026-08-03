@@ -36,15 +36,19 @@ const json = (data, status, origin) =>
   });
 
 // Límite por IP y día. Cada consulta de la app = 1 search + 1 llm; se cuenta en /api/search.
+// Devuelve la cuota para que la app muestre al usuario cuántas consultas gratis le quedan.
 async function checkRateLimit(env, ip) {
-  if (!env.RATE_LIMIT) return { ok: true }; // sin KV configurado: no se limita
+  if (!env.RATE_LIMIT) return { ok: true }; // sin KV configurado: no se limita ni se informa cuota
   const day = new Date().toISOString().slice(0, 10);
   const key = `${ip}:${day}`;
   const count = parseInt((await env.RATE_LIMIT.get(key)) || '0', 10);
-  if (count >= DAILY_LIMIT_PER_IP) return { ok: false, count };
-  // TTL de 48h para que las entradas caduquen solas
-  await env.RATE_LIMIT.put(key, String(count + 1), { expirationTtl: 172800 });
-  return { ok: true, count: count + 1 };
+  const limit = DAILY_LIMIT_PER_IP;
+  if (count >= limit) {
+    return { ok: false, quota: { used: count, limit, remaining: 0 } };
+  }
+  const used = count + 1;
+  await env.RATE_LIMIT.put(key, String(used), { expirationTtl: 172800 }); // TTL 48h: caducan solas
+  return { ok: true, quota: { used, limit, remaining: limit - used } };
 }
 
 async function handleSearch(query, env) {
@@ -104,9 +108,12 @@ export default {
     try {
       const body = await request.json();
       if (url.pathname === '/api/search') {
-        const limit = await checkRateLimit(env, ip);
-        if (!limit.ok) return json({ error: 'Límite diario alcanzado. Usa tu propia clave en Ajustes.' }, 429, origin);
-        return json(await handleSearch(body.query || '', env), 200, origin);
+        const rl = await checkRateLimit(env, ip);
+        if (!rl.ok) {
+          return json({ error: 'LIMIT_REACHED', quota: rl.quota }, 429, origin);
+        }
+        const result = await handleSearch(body.query || '', env);
+        return json({ ...result, quota: rl.quota }, 200, origin); // quota undefined si no hay KV
       }
       if (url.pathname === '/api/llm') {
         return json(await handleLLM(body.prompt || '', env), 200, origin);

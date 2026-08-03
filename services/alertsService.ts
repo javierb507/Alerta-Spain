@@ -4,8 +4,15 @@
 // 2. Estructuración con el LLM configurado (llmService: cualquier endpoint OpenAI-compatible)
 import { AlertEvent, SeverityLevel, SourceType, CustomSource } from "../types";
 import { loadConfig } from "./config";
-import { searchIncidents } from "./searchService";
+import { searchIncidents, SharedQuota } from "./searchService";
 import { chatJSON } from "./llmService";
+
+export interface AlertsResult {
+  events: AlertEvent[];
+  analysis: string;
+  quota?: SharedQuota;        // cuota restante del servidor compartido
+  limitReached?: boolean;     // true si se agotó la cuota gratuita del día
+}
 
 export const fetchAlerts = async (
   location: string,
@@ -13,7 +20,7 @@ export const fetchAlerts = async (
   radius?: number,
   categoryFilter?: string,
   customSources: CustomSource[] = []
-): Promise<{ events: AlertEvent[], analysis: string }> => {
+): Promise<AlertsResult> => {
   const config = loadConfig();
   const isHistorical = !!date;
   const radiusContext = radius ? ` en un radio de ${radius} kilómetros` : '';
@@ -98,10 +105,13 @@ Responde SOLO con un objeto JSON con esta estructura exacta, sin texto adicional
       };
     });
 
-    return { events, analysis: parsedData.riskAnalysis || "Informe generado correctamente." };
+    return { events, analysis: parsedData.riskAnalysis || "Informe generado correctamente.", quota: search.quota };
   } catch (error) {
     console.error("fetchAlerts Error:", error);
     const msg = error instanceof Error ? error.message : String(error);
+    if (msg.includes('SHARED_LIMIT_REACHED')) {
+      return { events: [], limitReached: true, analysis: "Has agotado las consultas gratuitas de hoy en el servidor compartido. Configura tu propia clave (gratis) en Ajustes para seguir sin límite." };
+    }
     if (msg.includes('NO_SEARCH_KEY')) {
       return { events: [], analysis: "Sin proveedor de búsqueda configurado. Añade una clave de Gemini o de Tavily en Ajustes." };
     }
