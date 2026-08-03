@@ -20,7 +20,7 @@ const ALLOWED_ORIGINS = [
   'http://localhost:3000',
 ];
 
-const DAILY_LIMIT_PER_IP = 30;
+const DAILY_LIMIT_PER_IP = 20;
 
 const corsHeaders = (origin) => ({
   'Access-Control-Allow-Origin': ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
