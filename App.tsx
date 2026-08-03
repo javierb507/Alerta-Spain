@@ -5,7 +5,7 @@ import {
   Bell, BellOff, Sun, Moon, ShieldAlert, Radio, ShieldCheck, Siren,
   ArrowLeft, Clock, Activity, CloudSun, Car, Settings,
   Trash2, Globe, X, KeyRound, ClipboardCopy, ClipboardPaste,
-  WifiOff, CheckCircle2, XCircle, Share2
+  WifiOff, CheckCircle2, XCircle, Share2, Volume2, VolumeX
 } from 'lucide-react';
 import { AlertEvent, UserLocation, SeverityLevel, QuickStatus, CustomSource, SourceType } from './types';
 import { fetchAlerts } from './services/alertsService';
@@ -19,6 +19,7 @@ import MapView from './components/MapView';
 import SOSPanel from './components/SOSPanel';
 import GuidesPanel from './components/GuidesPanel';
 import { distanceKm } from './services/geo';
+import { speak, stopSpeaking, speechSupported } from './services/speechService';
 
 enum ViewState { ONBOARDING, DASHBOARD, HISTORY }
 
@@ -420,6 +421,31 @@ export default function App() {
     return 'SEGURO';
   })();
 
+  // Lectura en voz alta del parte de situación (manos libres / accesibilidad)
+  const [speaking, setSpeaking] = useState(false);
+  const toggleSpeak = () => {
+    if (speaking) {
+      stopSpeaking();
+      setSpeaking(false);
+      return;
+    }
+    const top = visibleAlerts.slice(0, 3).map(a => {
+      const d = alertDistance(a);
+      return `${a.title}${d !== undefined ? `, a ${d < 1 ? `${Math.round(d * 1000)} metros` : `${d.toFixed(1)} kilómetros`}` : ''}.`;
+    }).join(' ');
+    const text = `Situación en ${location.name}. Nivel de riesgo: ${riskLabel}. ${analysis} ${top ? `Alertas más cercanas: ${top}` : ''}`;
+    setSpeaking(true);
+    speak(text, () => setSpeaking(false));
+  };
+
+  // Detener la locución al salir del dashboard
+  useEffect(() => {
+    if (view !== ViewState.DASHBOARD) {
+      stopSpeaking();
+      setSpeaking(false);
+    }
+  }, [view]);
+
   // Informe compartible (WhatsApp/SMS) con el estado actual
   const shareReport = async () => {
     const top = visibleAlerts.slice(0, 5).map(a => {
@@ -737,7 +763,14 @@ export default function App() {
                         <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
                            <div className="flex items-start justify-between mb-4">
                              <h3 className="text-white/60 text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-2"><Radio className="w-4 h-4 animate-ping text-white" /> Inteligencia Situacional</h3>
-                             <button onClick={shareReport} aria-label="Compartir informe" className="p-2 -m-2 text-white/60 hover:text-white transition-colors"><Share2 className="w-4 h-4" /></button>
+                             <div className="flex items-center gap-3">
+                               {speechSupported() && (
+                                 <button onClick={toggleSpeak} aria-label={speaking ? 'Detener lectura' : 'Escuchar informe'} className="p-2 -m-2 text-white/60 hover:text-white transition-colors">
+                                   {speaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                                 </button>
+                               )}
+                               <button onClick={shareReport} aria-label="Compartir informe" className="p-2 -m-2 text-white/60 hover:text-white transition-colors"><Share2 className="w-4 h-4" /></button>
+                             </div>
                            </div>
                            <p className="text-white text-lg font-bold leading-tight">{analysis}</p>
                         </div>
