@@ -1,0 +1,10 @@
+name = "alerta-spain-proxy"
+main = "src/index.js"
+compatibility_date = "2026-01-01"
+
+# Límite por IP/día (opcional). Descomenta tras crear el namespace:
+#   npx wrangler kv namespace create RATE_LIMIT
+# y pega el id que devuelve.
+# [[kv_namespaces]]
+# binding = "RATE_LIMIT"
+# id = "<pega-aqui-el-id>"

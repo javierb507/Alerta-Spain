@@ -103,7 +103,9 @@ export default function App() {
     updateAIConfig({ llmPreset: id, llmBaseUrl: preset.baseUrl, llmModel: preset.defaultModel });
   };
   // Sin ninguna clave configurada la app no puede buscar alertas: se guía al usuario a Ajustes
-  const needsSetup = !aiConfig.llmApiKey && !aiConfig.geminiApiKey && !aiConfig.tavilyApiKey;
+  // En modo servidor compartido el usuario no configura claves: el proxy las tiene.
+  const needsSetup = aiConfig.apiMode !== 'shared' &&
+    !aiConfig.llmApiKey && !aiConfig.geminiApiKey && !aiConfig.tavilyApiKey;
 
   // Prueba de conexión de las claves configuradas
   const [testResults, setTestResults] = useState<TestResult[] | null>(null);
