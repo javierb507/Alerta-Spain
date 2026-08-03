@@ -30,7 +30,7 @@ GitHub Actions reconstruye la app y el botón "Servidor compartido" se enciende.
 ## Límite por IP/día (recomendado)
 
 Sin esto, cualquiera que descubra la URL puede gastar tu clave. Con esto, máximo
-30 consultas por IP y día (editable en `src/index.js`, `DAILY_LIMIT_PER_IP`).
+20 consultas por IP y día (editable en `src/index.js`, `DAILY_LIMIT_PER_IP`).
 
 ```bash
 npx wrangler kv namespace create RATE_LIMIT
