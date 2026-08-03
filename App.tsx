@@ -16,6 +16,7 @@ import { AudioService } from './services/audioService';
 import AlertCard from './components/AlertCard';
 import StatsChart from './components/StatsChart';
 import MapView from './components/MapView';
+import SOSPanel from './components/SOSPanel';
 
 enum ViewState { ONBOARDING, DASHBOARD, HISTORY }
 
@@ -501,6 +502,7 @@ export default function App() {
 
   return (
     <div className="h-screen bg-slate-50 dark:bg-slate-950 font-sans transition-colors overflow-hidden">
+      <SOSPanel />
       {view === ViewState.ONBOARDING && (
         <div className="h-full p-6 flex flex-col items-center bg-grid relative overflow-y-auto">
           <div className="absolute top-6 right-6 flex gap-2 z-50">
