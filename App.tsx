@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { AlertEvent, UserLocation, SeverityLevel, QuickStatus, CustomSource, SourceType, SavedLocation } from './types';
 import { fetchAlerts } from './services/alertsService';
-import { AIConfig, LLM_PRESETS, loadConfig, saveConfig, getPreset } from './services/config';
+import { AIConfig, LLM_PRESETS, loadConfig, saveConfig, getPreset, sharedModeAvailable } from './services/config';
 import { testConnections, TestResult } from './services/connectionTest';
 import { fetchQuickStatus, geocodeLocation } from './services/weatherService';
 import { AudioService } from './services/audioService';
@@ -528,11 +528,47 @@ export default function App() {
                     </button>
                 </div>
 
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Modo de conexión</p>
+                <div className="space-y-2">
+                    <button
+                        onClick={() => sharedModeAvailable() && updateAIConfig({ apiMode: 'shared' })}
+                        disabled={!sharedModeAvailable()}
+                        className={`w-full text-left p-4 rounded-2xl border transition-colors ${aiConfig.apiMode === 'shared' ? 'border-blue-500 bg-blue-500/10' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50'} ${!sharedModeAvailable() ? 'opacity-50' : ''}`}
+                    >
+                        <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-black uppercase text-slate-900 dark:text-white">Servidor compartido</span>
+                            {!sharedModeAvailable() && <span className="text-[8px] font-black uppercase text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded-md">Próximamente</span>}
+                        </div>
+                        <p className="text-[9px] text-slate-400 font-bold mt-1 leading-snug">Sin configurar nada, con cuota diaria limitada. Requiere el proxy del servidor.</p>
+                    </button>
+                    <button
+                        onClick={() => updateAIConfig({ apiMode: 'own' })}
+                        className={`w-full text-left p-4 rounded-2xl border transition-colors ${aiConfig.apiMode === 'own' ? 'border-blue-500 bg-blue-500/10' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50'}`}
+                    >
+                        <span className="text-[11px] font-black uppercase text-slate-900 dark:text-white">Mis claves</span>
+                        <p className="text-[9px] text-slate-400 font-bold mt-1 leading-snug">Tus claves, sin límite compartido. Se guardan solo en este dispositivo.</p>
+                    </button>
+                </div>
+
+                {needsSetup && (
+                    <div className="p-4 rounded-2xl border border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 space-y-1">
+                        <p className="text-[10px] font-black uppercase text-emerald-700 dark:text-emerald-400">Combinación gratuita recomendada</p>
+                        <p className="text-[9px] font-bold text-emerald-700/80 dark:text-emerald-400/80 leading-snug">
+                            IA: <a href="https://console.groq.com/keys" target="_blank" rel="noreferrer" className="underline">Groq</a> (sin tarjeta, ~60 consultas al día) ·
+                            Búsqueda: <a href="https://app.tavily.com" target="_blank" rel="noreferrer" className="underline">Tavily</a> (1.000 al mes).
+                            Cada consulta gasta unos 4.000 tokens.
+                        </p>
+                    </div>
+                )}
+
                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Proveedor de IA</p>
                 <div className="space-y-3 bg-slate-50 dark:bg-slate-950/50 p-4 rounded-3xl border border-slate-100 dark:border-slate-800">
                     <select value={aiConfig.llmPreset} onChange={(e) => handlePresetChange(e.target.value)} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold outline-none appearance-none">
                         {LLM_PRESETS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </select>
+                    {getPreset(aiConfig.llmPreset).freeNote && (
+                        <p className="text-[9px] text-slate-400 font-bold px-1">Plan gratuito: {getPreset(aiConfig.llmPreset).freeNote}</p>
+                    )}
                     {aiConfig.llmPreset === 'custom' && (
                         <input type="text" placeholder="Base URL (ej: https://api.../v1)" value={aiConfig.llmBaseUrl} onChange={(e) => updateAIConfig({ llmBaseUrl: e.target.value })} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs font-bold outline-none" />
                     )}

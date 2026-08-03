@@ -21,6 +21,12 @@ export const chatJSON = async (prompt: string, config: AIConfig): Promise<any> =
   if (preset.supportsJsonMode) {
     body.response_format = { type: 'json_object' };
   }
+  // Estructurar texto ya recopilado es una tarea mecánica: el razonamiento extendido
+  // no mejora el resultado y multiplica los tokens de salida (medido: 57% menos
+  // consumo con nivel bajo). Alarga notablemente los planes gratuitos.
+  if (config.llmPreset.startsWith('gemini')) {
+    body.reasoning_effort = 'low';
+  }
 
   const res = await fetch(`${config.llmBaseUrl || preset.baseUrl}/chat/completions`, {
     method: 'POST',
