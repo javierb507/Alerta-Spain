@@ -20,6 +20,8 @@ import SOSPanel from './components/SOSPanel';
 import GuidesPanel from './components/GuidesPanel';
 import { distanceKm } from './services/geo';
 import { speak, stopSpeaking, speechSupported } from './services/speechService';
+import SharePanel from './components/SharePanel';
+import { ReportData } from './services/reportService';
 
 enum ViewState { ONBOARDING, DASHBOARD, HISTORY }
 
@@ -470,21 +472,15 @@ export default function App() {
     }
   }, [view]);
 
-  // Informe compartible (WhatsApp/SMS) con el estado actual
-  const shareReport = async () => {
-    const top = visibleAlerts.slice(0, 5).map(a => {
-      const d = alertDistance(a);
-      return `• [${a.severity}] ${a.title}${d !== undefined ? ` (a ${d.toFixed(1)} km)` : ''}`;
-    }).join('\n');
-    const text = `🚨 MONITOR ESPAÑA — ${location.name}${lastUpdate ? ` (${lastUpdate})` : ''}\nNivel de riesgo: ${riskLabel}\n\n${analysis}\n${top ? `\n${top}\n` : ''}\nVía https://javierb507.github.io/Alerta-Spain/`;
-    try {
-      if (navigator.share) {
-        await navigator.share({ text });
-      } else {
-        await navigator.clipboard.writeText(text);
-        alert('Informe copiado al portapapeles.');
-      }
-    } catch { /* usuario canceló */ }
+  // Informe de situación compartible, con la fuente original de cada alerta
+  const [shareOpen, setShareOpen] = useState(false);
+  const reportData: ReportData = {
+    location: location.name,
+    riskLabel,
+    analysis,
+    alerts: visibleAlerts,
+    distances: new Map(visibleAlerts.map(a => [a.id, alertDistance(a)])),
+    timestamp: cachedAt ?? Date.now(),
   };
 
   const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
@@ -610,6 +606,7 @@ export default function App() {
     <div className="h-screen bg-slate-50 dark:bg-slate-950 font-sans transition-colors overflow-hidden">
       <SOSPanel onOpenGuides={() => openGuide()} />
       <GuidesPanel open={guidesOpen} onClose={() => setGuidesOpen(false)} initialGuideId={activeGuideId} />
+      <SharePanel open={shareOpen} onClose={() => setShareOpen(false)} data={reportData} />
       {view === ViewState.ONBOARDING && (
         <div className="h-full p-6 flex flex-col items-center bg-grid relative overflow-y-auto">
           <div className="absolute top-6 right-6 flex gap-2 z-50">
@@ -813,7 +810,7 @@ export default function App() {
                                    {speaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
                                  </button>
                                )}
-                               <button onClick={shareReport} aria-label="Compartir informe" className="p-2 -m-2 text-white/60 hover:text-white transition-colors"><Share2 className="w-4 h-4" /></button>
+                               <button onClick={() => setShareOpen(true)} aria-label="Compartir informe" className="p-2 -m-2 text-white/60 hover:text-white transition-colors"><Share2 className="w-4 h-4" /></button>
                              </div>
                            </div>
                            <p className="text-white text-lg font-bold leading-tight">{analysis}</p>
