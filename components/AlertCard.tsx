@@ -23,9 +23,11 @@ import {
 
 interface Props {
   event: AlertEvent;
+  // Distancia real en km desde la ubicación buscada (si el evento tiene coords)
+  distanceKm?: number;
 }
 
-const AlertCard: React.FC<Props> = ({ event }) => {
+const AlertCard: React.FC<Props> = ({ event, distanceKm }) => {
   const getSeverityStyles = (level: SeverityLevel) => {
     switch (level) {
       case SeverityLevel.CRITICAL:
@@ -118,6 +120,11 @@ const AlertCard: React.FC<Props> = ({ event }) => {
                 <span className="flex items-center gap-1 text-[9px] text-slate-400 font-bold uppercase">
                     <MapPin className="w-3 h-3" /> {event.location}
                 </span>
+                {distanceKm !== undefined && (
+                    <span className="px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                        a {distanceKm < 1 ? `${Math.round(distanceKm * 1000)} m` : `${distanceKm.toFixed(1)} km`}
+                    </span>
+                )}
                 {event.sources[0]?.type === SourceType.OFFICIAL && (
                     <span className="flex items-center gap-1 text-[9px] text-emerald-500 font-black uppercase tracking-tighter">
                         <CheckCircle2 className="w-3 h-3" /> Fuente Oficial
