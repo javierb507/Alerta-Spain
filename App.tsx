@@ -5,7 +5,7 @@ import {
   Bell, BellOff, Sun, Moon, ShieldAlert, Radio, ShieldCheck, Siren,
   ArrowLeft, Clock, Activity, CloudSun, Car, Settings,
   Trash2, Globe, X, KeyRound, ClipboardCopy, ClipboardPaste,
-  WifiOff, CheckCircle2, XCircle
+  WifiOff, CheckCircle2, XCircle, Share2
 } from 'lucide-react';
 import { AlertEvent, UserLocation, SeverityLevel, QuickStatus, CustomSource, SourceType } from './types';
 import { fetchAlerts } from './services/alertsService';
@@ -17,6 +17,7 @@ import AlertCard from './components/AlertCard';
 import StatsChart from './components/StatsChart';
 import MapView from './components/MapView';
 import SOSPanel from './components/SOSPanel';
+import { distanceKm } from './services/geo';
 
 enum ViewState { ONBOARDING, DASHBOARD, HISTORY }
 
@@ -156,22 +157,26 @@ export default function App() {
     localStorage.setItem('category_filter', categoryFilter);
   }, [categoryFilter]);
 
-  // Sin conexión al arrancar: mostrar la última búsqueda cacheada
+  // Apertura instantánea: restaurar la última búsqueda al arrancar (online u offline)
+  // y, si los datos tienen más de 10 minutos y hay conexión, re-escanear en segundo plano.
   useEffect(() => {
-    if (!navigator.onLine) {
-      const saved = localStorage.getItem('last_search');
-      if (saved) {
-        try {
-          const data = JSON.parse(saved);
-          setAlerts(data.alerts || []);
-          setAnalysis(data.analysis || '');
-          setLocation({ name: data.location || '', isGPS: false });
-          setHistoryDate(data.historyDate || '');
-          setCachedAt(data.timestamp);
-          setView(ViewState.DASHBOARD);
-        } catch { /* caché corrupta: ignorar */ }
+    const saved = localStorage.getItem('last_search');
+    if (!saved) return;
+    try {
+      const data = JSON.parse(saved);
+      if (data.historyDate) return; // no restaurar snapshots históricos
+      setAlerts(data.alerts || []);
+      setAnalysis(data.analysis || '');
+      setLocation({ name: data.location || '', isGPS: false });
+      setCachedAt(data.timestamp);
+      if (data.mapCenter) setMapCenter(data.mapCenter);
+      setView(ViewState.DASHBOARD);
+      const STALE_MS = 10 * 60 * 1000;
+      if (navigator.onLine && data.location && Date.now() - data.timestamp > STALE_MS) {
+        executeSearch(data.location);
       }
-    }
+    } catch { /* caché corrupta: ignorar */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -304,12 +309,25 @@ export default function App() {
       setHistoryDate(date || '');
       setCachedAt(null);
 
-      // Centro del mapa: coords embebidas en búsquedas GPS ("Cerca de lat, lng") o geocoding
+      // Centro del mapa: coords embebidas en búsquedas GPS ("Cerca de lat, lng") o geocoding.
+      // Se guarda también en la caché para que la restauración al arrancar tenga mapa y distancias.
+      const applyMapCenter = (center: { lat: number, lng: number } | null) => {
+        setMapCenter(center);
+        if (!center) return;
+        const saved = localStorage.getItem('last_search');
+        if (saved) {
+          try {
+            const data = JSON.parse(saved);
+            data.mapCenter = center;
+            localStorage.setItem('last_search', JSON.stringify(data));
+          } catch { /* caché corrupta: ignorar */ }
+        }
+      };
       const coordMatch = locName.match(/(-?\d+\.\d+),\s*(-?\d+\.\d+)/);
       if (coordMatch) {
-        setMapCenter({ lat: Number(coordMatch[1]), lng: Number(coordMatch[2]) });
+        applyMapCenter({ lat: Number(coordMatch[1]), lng: Number(coordMatch[2]) });
       } else {
-        geocodeLocation(locName).then(setMapCenter);
+        geocodeLocation(locName).then(applyMapCenter);
       }
 
       // Caché para modo offline y lista de búsquedas recientes
@@ -377,9 +395,42 @@ export default function App() {
 
   // Filtro de categorías: filtra la lista en cliente y se pasa al prompt de búsqueda.
   const CATEGORIES = ['TODAS', 'Incendio', 'Clima', 'Tráfico', 'Transporte', 'Seguridad'];
-  const visibleAlerts = categoryFilter === 'TODAS'
+  const filteredAlerts = categoryFilter === 'TODAS'
     ? alerts
     : alerts.filter(a => (a.category || '').toLowerCase().includes(categoryFilter.toLowerCase()));
+
+  // Distancia real al centro buscado; se ordena por cercanía (sin coords al final)
+  const alertDistance = (a: AlertEvent): number | undefined =>
+    mapCenter && a.lat !== undefined && a.lng !== undefined
+      ? distanceKm(mapCenter, { lat: a.lat, lng: a.lng })
+      : undefined;
+  const visibleAlerts = [...filteredAlerts].sort((a, b) =>
+    (alertDistance(a) ?? Infinity) - (alertDistance(b) ?? Infinity));
+
+  // Nivel de riesgo global (mismo criterio que el gauge de StatsChart)
+  const riskLabel = (() => {
+    const order = [SeverityLevel.CRITICAL, SeverityLevel.WARNING, SeverityLevel.INFO];
+    const labels = { [SeverityLevel.CRITICAL]: 'CRÍTICO', [SeverityLevel.WARNING]: 'ALERTA', [SeverityLevel.INFO]: 'INFO' } as Record<SeverityLevel, string>;
+    for (const s of order) if (alerts.some(a => a.severity === s)) return labels[s];
+    return 'SEGURO';
+  })();
+
+  // Informe compartible (WhatsApp/SMS) con el estado actual
+  const shareReport = async () => {
+    const top = visibleAlerts.slice(0, 5).map(a => {
+      const d = alertDistance(a);
+      return `• [${a.severity}] ${a.title}${d !== undefined ? ` (a ${d.toFixed(1)} km)` : ''}`;
+    }).join('\n');
+    const text = `🚨 MONITOR ESPAÑA — ${location.name}${lastUpdate ? ` (${lastUpdate})` : ''}\nNivel de riesgo: ${riskLabel}\n\n${analysis}\n${top ? `\n${top}\n` : ''}\nVía https://javierb507.github.io/Alerta-Spain/`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ text });
+      } else {
+        await navigator.clipboard.writeText(text);
+        alert('Informe copiado al portapapeles.');
+      }
+    } catch { /* usuario canceló */ }
+  };
 
   const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
   const years = Array.from({ length: 10 }, (_, i) => currentYear - i);
@@ -652,7 +703,7 @@ export default function App() {
            </header>
            <main className="flex-1 overflow-y-auto px-6 py-8">
              <div className="max-w-3xl mx-auto space-y-8 pb-32">
-                {loading ? (
+                {loading && alerts.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-24 gap-4 opacity-60">
                         <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
                         <p className="text-[10px] font-black uppercase tracking-widest">Escaneando Protocolos...</p>
@@ -661,9 +712,11 @@ export default function App() {
                     <>
                         {cachedAt && (
                             <div className="p-4 rounded-2xl border border-amber-300 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 flex items-center gap-3">
-                                <WifiOff className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                                {navigator.onLine ? <Clock className="w-4 h-4 text-amber-600 flex-shrink-0" /> : <WifiOff className="w-4 h-4 text-amber-600 flex-shrink-0" />}
                                 <p className="text-[10px] font-black uppercase text-amber-700 dark:text-amber-400">
-                                    Sin conexión — mostrando datos de las {new Date(cachedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    {navigator.onLine
+                                      ? `Datos de las ${new Date(cachedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}${loading ? ' — actualizando...' : ''}`
+                                      : `Sin conexión — mostrando datos de las ${new Date(cachedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
                                 </p>
                             </div>
                         )}
@@ -676,7 +729,10 @@ export default function App() {
                             </div>
                         )}
                         <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
-                           <h3 className="text-white/60 text-[10px] font-black uppercase tracking-[0.3em] mb-4 flex items-center gap-2"><Radio className="w-4 h-4 animate-ping text-white" /> Inteligencia Situacional</h3>
+                           <div className="flex items-start justify-between mb-4">
+                             <h3 className="text-white/60 text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-2"><Radio className="w-4 h-4 animate-ping text-white" /> Inteligencia Situacional</h3>
+                             <button onClick={shareReport} aria-label="Compartir informe" className="p-2 -m-2 text-white/60 hover:text-white transition-colors"><Share2 className="w-4 h-4" /></button>
+                           </div>
                            <p className="text-white text-lg font-bold leading-tight">{analysis}</p>
                         </div>
                         <div className="space-y-4">
@@ -695,7 +751,7 @@ export default function App() {
                                  </button>
                               ))}
                            </div>
-                           {visibleAlerts.map(evt => <AlertCard key={evt.id} event={evt} />)}
+                           {visibleAlerts.map(evt => <AlertCard key={evt.id} event={evt} distanceKm={alertDistance(evt)} />)}
                            {visibleAlerts.length === 0 && <div className="py-20 text-center opacity-30"><ShieldCheck className="w-12 h-12 mx-auto mb-4" /><p className="text-xs font-black uppercase tracking-widest">{categoryFilter === 'TODAS' ? 'Sin Riesgos Detectados' : `Sin eventos de ${categoryFilter}`}</p></div>}
                         </div>
                         {renderFooter("opacity-30")}
