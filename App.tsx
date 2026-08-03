@@ -5,9 +5,9 @@ import {
   Bell, BellOff, Sun, Moon, ShieldAlert, Radio, ShieldCheck, Siren,
   ArrowLeft, Clock, Activity, CloudSun, Car, Settings,
   Trash2, Globe, X, KeyRound, ClipboardCopy, ClipboardPaste,
-  WifiOff, CheckCircle2, XCircle, Share2, Volume2, VolumeX
+  WifiOff, CheckCircle2, XCircle, Share2, Volume2, VolumeX, Star
 } from 'lucide-react';
-import { AlertEvent, UserLocation, SeverityLevel, QuickStatus, CustomSource, SourceType } from './types';
+import { AlertEvent, UserLocation, SeverityLevel, QuickStatus, CustomSource, SourceType, SavedLocation } from './types';
 import { fetchAlerts } from './services/alertsService';
 import { AIConfig, LLM_PRESETS, loadConfig, saveConfig, getPreset } from './services/config';
 import { testConnections, TestResult } from './services/connectionTest';
@@ -43,6 +43,29 @@ export default function App() {
     const saved = localStorage.getItem('recent_searches');
     return saved ? JSON.parse(saved) : [];
   });
+
+  // Zonas vigiladas: ubicaciones guardadas con nombre propio (casa, trabajo, familia)
+  const [savedLocations, setSavedLocations] = useState<SavedLocation[]>(() => {
+    const saved = localStorage.getItem('saved_locations');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const persistSaved = (next: SavedLocation[]) => {
+    setSavedLocations(next);
+    localStorage.setItem('saved_locations', JSON.stringify(next));
+  };
+  const currentSaved = savedLocations.find(s => s.query === location.name);
+  const toggleSaveLocation = () => {
+    if (!location.name) return;
+    if (currentSaved) {
+      persistSaved(savedLocations.filter(s => s.id !== currentSaved.id));
+      AudioService.playScan();
+      return;
+    }
+    const label = prompt('Nombre para esta zona (ej: Casa, Trabajo):', location.name);
+    if (!label) return;
+    persistSaved([...savedLocations, { id: Math.random().toString(36).slice(2, 11), label, query: location.name }]);
+    AudioService.playSuccess();
+  };
   
   // Persistencia de monitorización y alertas vistas
   const [isMonitoring, setIsMonitoring] = useState(() => {
@@ -95,7 +118,7 @@ export default function App() {
 
   // Exportar/importar configuración entre dispositivos (evita teclear claves en el móvil)
   const exportConfig = async () => {
-    const payload = JSON.stringify({ ai_config: aiConfig, custom_sources: customSources });
+    const payload = JSON.stringify({ ai_config: aiConfig, custom_sources: customSources, saved_locations: savedLocations });
     try {
       await navigator.clipboard.writeText(payload);
       AudioService.playSuccess();
@@ -112,6 +135,7 @@ export default function App() {
       const data = JSON.parse(raw);
       if (data.ai_config) updateAIConfig(data.ai_config);
       if (Array.isArray(data.custom_sources)) setCustomSources(data.custom_sources);
+      if (Array.isArray(data.saved_locations)) persistSaved(data.saved_locations);
       AudioService.playSuccess();
       alert("Configuración importada correctamente.");
     } catch {
@@ -653,9 +677,26 @@ export default function App() {
                     <input type="text" placeholder="Localidad..." value={location.name} onChange={(e) => setLocation({ ...location, name: e.target.value })} className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-3.5 text-xs font-bold" />
                     <button type="submit" className="bg-blue-600 text-white p-4 rounded-2xl"><Search className="w-4 h-4" /></button>
                 </form>
+                {savedLocations.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Mis zonas</p>
+                    <div className="flex gap-2 flex-wrap">
+                      {savedLocations.map(s => (
+                        <div key={s.id} className="flex items-center rounded-full bg-blue-500/10 border border-blue-500/20 overflow-hidden">
+                          <button onClick={() => executeSearch(s.query)} disabled={loading} className="pl-3 pr-2 py-1.5 flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                            <Star className="w-3 h-3 fill-current" /> {s.label}
+                          </button>
+                          <button onClick={() => persistSaved(savedLocations.filter(x => x.id !== s.id))} aria-label={`Quitar ${s.label}`} className="pr-2.5 pl-1 py-1.5 text-blue-400/60">
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {recentSearches.length > 0 && (
                   <div className="flex gap-2 flex-wrap">
-                    {recentSearches.map(name => (
+                    {recentSearches.filter(n => !savedLocations.some(s => s.query === n)).map(name => (
                       <button key={name} onClick={() => executeSearch(name)} disabled={loading} className="px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
                         {name}
                       </button>
@@ -724,6 +765,9 @@ export default function App() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    <button onClick={toggleSaveLocation} aria-label={currentSaved ? 'Quitar de mis zonas' : 'Guardar en mis zonas'} className={`p-2.5 rounded-xl transition-all ${currentSaved ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
+                        <Star className={`w-5 h-5 ${currentSaved ? 'fill-current' : ''}`} />
+                    </button>
                     <button onClick={toggleMonitoring} className={`p-2.5 rounded-xl transition-all ${isMonitoring ? 'bg-red-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
                         {isMonitoring ? <Bell className="w-5 h-5 animate-pulse" /> : <BellOff className="w-5 h-5" />}
                     </button>

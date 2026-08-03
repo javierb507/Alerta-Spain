@@ -40,6 +40,13 @@ export enum SourceType {
     lng?: number;
   }
   
+  // Zona guardada por el usuario para vigilarla con un toque (casa, trabajo, familia)
+  export interface SavedLocation {
+    id: string;
+    label: string;   // Nombre amigable: "Casa", "Trabajo"
+    query: string;   // Texto real de búsqueda
+  }
+
   export interface UserLocation {
     lat?: number;
     lng?: number;
