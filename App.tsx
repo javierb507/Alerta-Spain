@@ -17,6 +17,7 @@ import AlertCard from './components/AlertCard';
 import StatsChart from './components/StatsChart';
 import MapView from './components/MapView';
 import SOSPanel from './components/SOSPanel';
+import GuidesPanel from './components/GuidesPanel';
 import { distanceKm } from './services/geo';
 
 enum ViewState { ONBOARDING, DASHBOARD, HISTORY }
@@ -54,6 +55,10 @@ export default function App() {
     return saved ? JSON.parse(saved) : [];
   });
   const [showSettings, setShowSettings] = useState(false);
+  // Guías de autoprotección offline
+  const [guidesOpen, setGuidesOpen] = useState(false);
+  const [activeGuideId, setActiveGuideId] = useState<string | undefined>();
+  const openGuide = (id?: string) => { setActiveGuideId(id); setGuidesOpen(true); };
   const [newSourceName, setNewSourceName] = useState('');
   const [newSourceUrl, setNewSourceUrl] = useState('');
   const [newSourceType, setNewSourceType] = useState<SourceType>(SourceType.OFFICIAL);
@@ -553,7 +558,8 @@ export default function App() {
 
   return (
     <div className="h-screen bg-slate-50 dark:bg-slate-950 font-sans transition-colors overflow-hidden">
-      <SOSPanel />
+      <SOSPanel onOpenGuides={() => openGuide()} />
+      <GuidesPanel open={guidesOpen} onClose={() => setGuidesOpen(false)} initialGuideId={activeGuideId} />
       {view === ViewState.ONBOARDING && (
         <div className="h-full p-6 flex flex-col items-center bg-grid relative overflow-y-auto">
           <div className="absolute top-6 right-6 flex gap-2 z-50">
@@ -751,7 +757,7 @@ export default function App() {
                                  </button>
                               ))}
                            </div>
-                           {visibleAlerts.map(evt => <AlertCard key={evt.id} event={evt} distanceKm={alertDistance(evt)} />)}
+                           {visibleAlerts.map(evt => <AlertCard key={evt.id} event={evt} distanceKm={alertDistance(evt)} onOpenGuide={openGuide} />)}
                            {visibleAlerts.length === 0 && <div className="py-20 text-center opacity-30"><ShieldCheck className="w-12 h-12 mx-auto mb-4" /><p className="text-xs font-black uppercase tracking-widest">{categoryFilter === 'TODAS' ? 'Sin Riesgos Detectados' : `Sin eventos de ${categoryFilter}`}</p></div>}
                         </div>
                         {renderFooter("opacity-30")}
