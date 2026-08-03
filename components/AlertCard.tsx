@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { AlertEvent, SeverityLevel, SourceType } from '../types';
+import { guideForCategory } from '../services/guides';
 import { 
   ShieldCheck, 
   Users, 
@@ -18,16 +19,20 @@ import {
   AlertCircle,
   TrainFront,
   Bus,
-  TramFront
+  TramFront,
+  BookOpen
 } from 'lucide-react';
 
 interface Props {
   event: AlertEvent;
   // Distancia real en km desde la ubicación buscada (si el evento tiene coords)
   distanceKm?: number;
+  // Abre la guía de autoprotección correspondiente a la categoría del evento
+  onOpenGuide?: (guideId: string) => void;
 }
 
-const AlertCard: React.FC<Props> = ({ event, distanceKm }) => {
+const AlertCard: React.FC<Props> = ({ event, distanceKm, onOpenGuide }) => {
+  const guide = guideForCategory(event.category);
   const getSeverityStyles = (level: SeverityLevel) => {
     switch (level) {
       case SeverityLevel.CRITICAL:
@@ -138,6 +143,14 @@ const AlertCard: React.FC<Props> = ({ event, distanceKm }) => {
         <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
             {event.description}
         </p>
+        {guide && onOpenGuide && (
+            <button
+                onClick={() => onOpenGuide(guide.id)}
+                className="mt-3 flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+            >
+                <BookOpen className="w-3.5 h-3.5" /> ¿Qué hago?
+            </button>
+        )}
       </div>
       
       <div className="mt-4 pt-4 sm:ml-[3.75rem] border-t border-slate-100 dark:border-slate-800/50 flex flex-wrap gap-3">

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Siren, Phone, MapPin, X, Share2, Loader2 } from 'lucide-react';
+import { Siren, Phone, MapPin, X, Share2, Loader2, BookOpen } from 'lucide-react';
 
 // Teléfonos oficiales de emergencia en España. Estático y offline a propósito:
 // debe funcionar sin red, sin claves y sin depender de nada externo.
@@ -14,7 +14,11 @@ const EMERGENCY_NUMBERS = [
   { num: '915620420', label: 'Toxicología', display: '91 562 04 20' },
 ];
 
-const SOSPanel: React.FC = () => {
+interface Props {
+  onOpenGuides: () => void;
+}
+
+const SOSPanel: React.FC<Props> = ({ onOpenGuides }) => {
   const [open, setOpen] = useState(false);
   const [sharing, setSharing] = useState(false);
 
@@ -86,6 +90,13 @@ const SOSPanel: React.FC = () => {
               {sharing ? <Loader2 className="w-5 h-5 animate-spin" /> : <MapPin className="w-5 h-5" />}
               Compartir mi ubicación
               <Share2 className="w-4 h-4 opacity-60" />
+            </button>
+
+            <button
+              onClick={() => { setOpen(false); onOpenGuides(); }}
+              className="w-full py-3 rounded-2xl border border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2"
+            >
+              <BookOpen className="w-4 h-4" /> ¿Qué hago? · Guías
             </button>
 
             <div className="space-y-2">
