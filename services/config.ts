@@ -46,8 +46,11 @@ export interface AIConfig {
   tavilyApiKey: string;   // para búsqueda alternativa
 }
 
-/** URL del proxy compartido; vacío desactiva el modo servidor compartido. */
-export const SHARED_PROXY_URL: string = 'https://alerta-spain-proxy.alerta-spain.workers.dev';
+/**
+ * URL del proxy compartido, inyectada en build por Vite (variable de GitHub Actions).
+ * No se hardcodea en el repo. Vacío → modo compartido desactivado (mis claves sigue OK).
+ */
+export const SHARED_PROXY_URL: string = __SHARED_PROXY_URL__;
 export const sharedModeAvailable = (): boolean => SHARED_PROXY_URL !== '';
 
 const STORAGE_KEY = 'ai_config';

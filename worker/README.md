@@ -10,6 +10,10 @@ Desde la carpeta `worker/`:
 ```bash
 cd worker
 
+# 0. Crea tu config local a partir del ejemplo (wrangler.toml está fuera del repo
+#    porque lleva la id de tu namespace KV, específica de tu cuenta).
+cp wrangler.toml.example wrangler.toml
+
 # 1. Entrar en tu cuenta de Cloudflare (abre el navegador)
 npx wrangler login
 

@@ -27,8 +27,11 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      # Build sin claves: cada usuario configura las suyas en Ajustes (localStorage)
+      # Build sin claves: cada usuario configura las suyas en Ajustes (localStorage).
+      # PROXY_URL viene de una variable del repo (Settings → Actions → Variables), no del código.
       - run: npm run build
+        env:
+          PROXY_URL: ${{ vars.PROXY_URL }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

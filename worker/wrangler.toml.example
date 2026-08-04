@@ -7,4 +7,4 @@ compatibility_date = "2026-01-01"
 # y pega el id que devuelve.
 [[kv_namespaces]]
 binding = "RATE_LIMIT"
-id = "76285b8ede094063ac9e7b8ac9319545"
+id = "<TU_KV_NAMESPACE_ID>"

@@ -14,7 +14,7 @@ Me di cuenta de que, aunque existen muchas herramientas de respuesta a emergenci
 
 ## 🚀 Despliegue en Producción
 La aplicación está publicada en GitHub Pages:
-**[https://javierb507.github.io/Alerta-Spain/](https://javierb507.github.io/Alerta-Spain/)**
+**[https://alarma.javivi.pro/](https://alarma.javivi.pro/)**
 
 Desde el móvil: abre la URL → menú del navegador → **"Añadir a pantalla de inicio"** para instalarla como app (PWA). Cada push a `main` despliega automáticamente vía GitHub Actions.
 
@@ -86,7 +86,7 @@ I realized that, although many emergency response tools exist, the information i
 
 ## 🚀 Production Deployment
 The application is published on GitHub Pages:
-**[https://javierb507.github.io/Alerta-Spain/](https://javierb507.github.io/Alerta-Spain/)**
+**[https://alarma.javivi.pro/](https://alarma.javivi.pro/)**
 
 On mobile: open the URL → browser menu → **"Add to Home Screen"** to install it as an app (PWA). Every push to `main` deploys automatically via GitHub Actions.
 

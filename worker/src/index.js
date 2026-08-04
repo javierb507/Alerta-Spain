@@ -16,6 +16,7 @@ const STRUCT_MODEL = 'gemini-3.6-flash';
 
 // Orígenes permitidos: solo la app oficial puede usar la cuota compartida.
 const ALLOWED_ORIGINS = [
+  'https://alarma.javivi.pro',
   'https://javierb507.github.io',
   'http://localhost:3000',
 ];
